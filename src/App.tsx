@@ -41,7 +41,7 @@ import {
   UserPlus,
   Cloud,
   Lock,
-  Mail,
+  Mail
 } from 'lucide-react';
 import { initializeApp } from 'firebase/app';
 import {
@@ -52,7 +52,7 @@ import {
   signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
-  updateProfile,
+  updateProfile
 } from 'firebase/auth';
 import {
   getFirestore,
@@ -61,7 +61,7 @@ import {
   deleteDoc,
   onSnapshot,
   collection,
-  writeBatch,
+  writeBatch
 } from 'firebase/firestore';
 
 // ============================================================================
@@ -73,7 +73,7 @@ const firebaseConfig =
     : {
         apiKey: 'AIzaSyCOiQYNfcRqZ9WGb5wPXBdQUlsf-Oa-iGk',
         authDomain: 'commander-vault-a94e1.firebaseapp.com',
-        projectId: 'commander-vault-a94e1',
+        projectId: 'commander-vault-a94e1'
       };
 const firebaseApp = initializeApp(firebaseConfig);
 const auth = getAuth(firebaseApp);
@@ -84,49 +84,17 @@ const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 // MTG COLOR IDENTITY DEFINITIONS & AUTHENTIC SVG MANA PIPS
 // ============================================================================
 const MTG_COLORS = {
-  W: {
-    name: 'White',
-    bg: '#F8F6D8',
-    border: '#D4AF37',
-    text: '#1E293B',
-    glow: 'rgba(248, 246, 216, 0.35)',
-  },
-  U: {
-    name: 'Blue',
-    bg: '#0E68AB',
-    border: '#38BDF8',
-    text: '#FFFFFF',
-    glow: 'rgba(14, 104, 171, 0.45)',
-  },
-  B: {
-    name: 'Black',
-    bg: '#27242B',
-    border: '#A855F7',
-    text: '#E2E8F0',
-    glow: 'rgba(168, 85, 247, 0.4)',
-  },
-  R: {
-    name: 'Red',
-    bg: '#D3202A',
-    border: '#FB7185',
-    text: '#FFFFFF',
-    glow: 'rgba(211, 32, 42, 0.45)',
-  },
-  G: {
-    name: 'Green',
-    bg: '#00733E',
-    border: '#34D399',
-    text: '#FFFFFF',
-    glow: 'rgba(0, 115, 62, 0.45)',
-  },
+  W: { name: 'White', bg: '#F8F6D8', border: '#D4AF37', text: '#1E293B', glow: 'rgba(248, 246, 216, 0.35)' },
+  U: { name: 'Blue', bg: '#0E68AB', border: '#38BDF8', text: '#FFFFFF', glow: 'rgba(14, 104, 171, 0.45)' },
+  B: { name: 'Black', bg: '#27242B', border: '#A855F7', text: '#E2E8F0', glow: 'rgba(168, 85, 247, 0.4)' },
+  R: { name: 'Red', bg: '#D3202A', border: '#FB7185', text: '#FFFFFF', glow: 'rgba(211, 32, 42, 0.45)' },
+  G: { name: 'Green', bg: '#00733E', border: '#34D399', text: '#FFFFFF', glow: 'rgba(0, 115, 62, 0.45)' }
 };
 
 const COLOR_ORDER = ['W', 'U', 'B', 'R', 'G'];
 
 const getGuildOrShardName = (colors) => {
-  const sorted = [...colors]
-    .sort((a, b) => COLOR_ORDER.indexOf(a) - COLOR_ORDER.indexOf(b))
-    .join('');
+  const sorted = [...colors].sort((a, b) => COLOR_ORDER.indexOf(a) - COLOR_ORDER.indexOf(b)).join('');
   const map = {
     '': 'Colorless',
     W: 'Mono-White',
@@ -159,7 +127,7 @@ const getGuildOrShardName = (colors) => {
     WBRG: 'Dune-Brood (No Blue)',
     WURG: 'Ink-Treader (No Black)',
     WUBG: 'Witch-Maw (No Red)',
-    WUBRG: 'Five-Color (WUBRG)',
+    WUBRG: 'Five-Color (WUBRG)'
   };
   return map[sorted] || sorted;
 };
@@ -175,7 +143,7 @@ const ManaPip = ({ color, size = 'sm' }) => {
         backgroundColor: c.bg,
         borderColor: c.border,
         color: c.text,
-        boxShadow: `0 0 8px ${c.glow}`,
+        boxShadow: `0 0 8px ${c.glow}`
       }}
       className={`${dims} inline-flex items-center justify-center rounded-full border font-extrabold tracking-tighter select-none shrink-0`}
     >
@@ -192,32 +160,32 @@ const COMMANDER_BRACKETS = {
     label: 'Bracket 1',
     short: 'B1 • Exhibition',
     desc: 'Theme / Exhibition / Ultra-Casual',
-    badge: 'bg-slate-800 text-slate-300 border-slate-600',
+    badge: 'bg-slate-800 text-slate-300 border-slate-600'
   },
   2: {
     label: 'Bracket 2',
     short: 'B2 • Core',
     desc: 'Modern Precon Level / Core',
-    badge: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/35',
+    badge: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/35'
   },
   3: {
     label: 'Bracket 3',
     short: 'B3 • Upgraded',
     desc: 'Upgraded / Synergistic',
-    badge: 'bg-sky-500/15 text-sky-300 border-sky-500/35',
+    badge: 'bg-sky-500/15 text-sky-300 border-sky-500/35'
   },
   4: {
     label: 'Bracket 4',
     short: 'B4 • Optimized',
     desc: 'High Power / Optimized',
-    badge: 'bg-amber-500/15 text-amber-300 border-amber-500/35',
+    badge: 'bg-amber-500/15 text-amber-300 border-amber-500/35'
   },
   5: {
     label: 'Bracket 5',
     short: 'B5 • cEDH',
     desc: 'Competitive EDH',
-    badge: 'bg-rose-500/15 text-rose-300 border-rose-500/35',
-  },
+    badge: 'bg-rose-500/15 text-rose-300 border-rose-500/35'
+  }
 };
 
 // ============================================================================
@@ -304,6 +272,88 @@ function extractMoxfieldId(url) {
   return match ? match[1] : null;
 }
 
+function extractArchidektId(url) {
+  if (!url) return null;
+  const match = url.match(/archidekt\.com\/decks\/(\d+)/i);
+  return match ? match[1] : null;
+}
+
+function getDeckSiteName(url) {
+  if (!url) return 'Decklist';
+  if (/archidekt\.com/i.test(url)) return 'Archidekt';
+  if (/moxfield\.com/i.test(url)) return 'Moxfield';
+  return 'Decklist';
+}
+
+function parseArchidektApiPayload(data) {
+  if (!data || !Array.isArray(data.cards)) return [];
+  const excludedCategories = new Set(
+    (data.categories || [])
+      .filter((cat) => cat && cat.includedInDeck === false)
+      .map((cat) => (cat.name || '').toLowerCase())
+  );
+
+  const merged = new Map();
+  for (const entry of data.cards) {
+    const cardName = entry?.card?.oracleCard?.name || entry?.card?.name;
+    if (!cardName) continue;
+
+    const cats = Array.isArray(entry.categories) ? entry.categories : [];
+    const isExcluded =
+      cats.length > 0 &&
+      cats.every((c) => {
+        const lower = String(c).toLowerCase();
+        return (
+          excludedCategories.has(lower) ||
+          lower === 'maybeboard' ||
+          lower === 'sideboard'
+        );
+      });
+    if (isExcluded) continue;
+
+    const key = cardName.toLowerCase();
+    const qty = entry.quantity || 1;
+    if (merged.has(key)) {
+      merged.get(key).qty += qty;
+    } else {
+      merged.set(key, { name: cardName, qty });
+    }
+  }
+  return Array.from(merged.values()).sort((a, b) => a.name.localeCompare(b.name));
+}
+
+async function fetchArchidektCardsByUrl(url) {
+  const archId = extractArchidektId(url);
+  if (!archId) return null;
+
+  const target = `https://archidekt.com/api/decks/${archId}/`;
+  const endpoints = [
+    target,
+    `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(target)}`,
+    `https://corsproxy.io/?${encodeURIComponent(target)}`,
+    `https://api.allorigins.win/raw?url=${encodeURIComponent(target)}`
+  ];
+
+  for (const endpoint of endpoints) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 6000);
+      const response = await fetch(endpoint, { signal: controller.signal });
+      clearTimeout(timeoutId);
+      if (response.ok) {
+        const json = await response.json();
+        const parsed = parseArchidektApiPayload(json);
+        if (parsed && parsed.length > 0) {
+          return parsed;
+        }
+      }
+    } catch {
+      // Try next endpoint
+    }
+  }
+  return null;
+}
+
 function parseMoxfieldApiPayload(data) {
   if (!data) return [];
   const result = [];
@@ -313,7 +363,7 @@ function parseMoxfieldApiPayload(data) {
       if (entry && entry.card && entry.card.name) {
         result.push({
           name: entry.card.name,
-          qty: entry.quantity || 1,
+          qty: entry.quantity || 1
         });
       }
     });
@@ -338,9 +388,7 @@ function parseMoxfieldApiPayload(data) {
       merged.set(key, { ...item });
     }
   }
-  return Array.from(merged.values()).sort((a, b) =>
-    a.name.localeCompare(b.name)
-  );
+  return Array.from(merged.values()).sort((a, b) => a.name.localeCompare(b.name));
 }
 
 async function fetchMoxfieldCardsByUrl(url) {
@@ -351,12 +399,9 @@ async function fetchMoxfieldCardsByUrl(url) {
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 6000);
-    const response = await fetch(
-      `/api/moxfield?id=${encodeURIComponent(moxId)}`,
-      {
-        signal: controller.signal,
-      }
-    );
+    const response = await fetch(`/api/moxfield?id=${encodeURIComponent(moxId)}`, {
+      signal: controller.signal
+    });
     clearTimeout(timeoutId);
     if (response.ok) {
       const contentType = response.headers.get('content-type') || '';
@@ -375,18 +420,14 @@ async function fetchMoxfieldCardsByUrl(url) {
   // 2. Fallback: Public proxy relays
   const jsonTargets = [
     `https://api2.moxfield.com/v3/decks/all/${moxId}`,
-    `https://api2.moxfield.com/v2/decks/all/${moxId}`,
+    `https://api2.moxfield.com/v2/decks/all/${moxId}`
   ];
 
   const jsonEndpoints = [];
   for (const target of jsonTargets) {
-    jsonEndpoints.push(
-      `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(target)}`
-    );
+    jsonEndpoints.push(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(target)}`);
     jsonEndpoints.push(`https://corsproxy.io/?${encodeURIComponent(target)}`);
-    jsonEndpoints.push(
-      `https://api.allorigins.win/raw?url=${encodeURIComponent(target)}`
-    );
+    jsonEndpoints.push(`https://api.allorigins.win/raw?url=${encodeURIComponent(target)}`);
   }
 
   for (const endpoint of jsonEndpoints) {
@@ -411,7 +452,7 @@ async function fetchMoxfieldCardsByUrl(url) {
   const exportUrl = `https://api2.moxfield.com/v2/decks/all/${moxId}/export?format=mtgo`;
   const textEndpoints = [
     `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(exportUrl)}`,
-    `https://api.allorigins.win/raw?url=${encodeURIComponent(exportUrl)}`,
+    `https://api.allorigins.win/raw?url=${encodeURIComponent(exportUrl)}`
   ];
 
   for (const endpoint of textEndpoints) {
@@ -434,6 +475,17 @@ async function fetchMoxfieldCardsByUrl(url) {
     }
   }
 
+  return null;
+}
+
+async function fetchDeckCardsByUrl(url) {
+  if (!url) return null;
+  if (extractArchidektId(url)) {
+    return fetchArchidektCardsByUrl(url);
+  }
+  if (extractMoxfieldId(url)) {
+    return fetchMoxfieldCardsByUrl(url);
+  }
   return null;
 }
 
@@ -473,7 +525,7 @@ const ScryfallCommanderInput = ({
   value,
   onChange,
   onSelectCommander,
-  required = false,
+  required = false
 }) => {
   const [results, setResults] = useState([]);
   const [isOpen, setIsOpen] = useState(false);
@@ -516,7 +568,7 @@ const ScryfallCommanderInput = ({
               card.image_uris?.art_crop ||
               card.card_faces?.[0]?.image_uris?.art_crop ||
               card.image_uris?.small ||
-              null,
+              null
           }));
           setResults(cards);
           setIsSearching(false);
@@ -600,9 +652,7 @@ const ScryfallCommanderInput = ({
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
                   {card.colors.length > 0 ? (
-                    card.colors.map((c) => (
-                      <ManaPip key={c} color={c} size="sm" />
-                    ))
+                    card.colors.map((c) => <ManaPip key={c} color={c} size="sm" />)
                   ) : (
                     <span className="px-1.5 py-0.5 rounded bg-slate-800 text-[10px] font-bold text-slate-400">
                       C
@@ -638,11 +688,7 @@ const ScryfallCardPreview = ({ cardName }) => {
     setError(false);
 
     const primaryName = cardName.split('//')[0].trim();
-    fetch(
-      `https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(
-        primaryName
-      )}`
-    )
+    fetch(`https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(primaryName)}`)
       .then((res) => {
         if (!res.ok) throw new Error('Card not found');
         return res.json();
@@ -673,18 +719,14 @@ const ScryfallCardPreview = ({ cardName }) => {
     return (
       <div className="h-full min-h-[260px] rounded-2xl bg-slate-950/70 border border-slate-800/80 flex flex-col items-center justify-center p-6 text-center text-slate-500">
         <Eye className="w-8 h-8 mb-2 opacity-40" />
-        <p className="text-xs font-medium">
-          Hover or click any card in the list to preview
-        </p>
+        <p className="text-xs font-medium">Hover or click any card in the list to preview</p>
       </div>
     );
   }
 
   return (
     <div className="rounded-2xl bg-slate-950/90 border border-slate-800 p-4 flex flex-col items-center text-center space-y-2.5">
-      <div className="text-xs font-bold text-amber-300 line-clamp-1">
-        {cardName}
-      </div>
+      <div className="text-xs font-bold text-amber-300 line-clamp-1">{cardName}</div>
       {loading && (
         <div className="w-52 h-72 rounded-xl bg-slate-900 animate-pulse flex items-center justify-center text-xs text-slate-500">
           Loading Scryfall...
@@ -705,10 +747,7 @@ const ScryfallCardPreview = ({ cardName }) => {
       )}
       {!loading && !error && cardType && (
         <div className="text-[11px] text-slate-400">
-          {cardType}{' '}
-          {manaCost && (
-            <span className="text-slate-300 font-semibold">• {manaCost}</span>
-          )}
+          {cardType} {manaCost && <span className="text-slate-300 font-semibold">• {manaCost}</span>}
         </div>
       )}
     </div>
@@ -725,7 +764,7 @@ const CardNominationInput = ({
   placeholder,
   value,
   onChange,
-  deckCards = [],
+  deckCards = []
 }) => {
   const [suggestions, setSuggestions] = useState([]);
   const [isOpen, setIsOpen] = useState(false);
@@ -760,18 +799,11 @@ const CardNominationInput = ({
     }
 
     const timer = setTimeout(() => {
-      fetch(
-        `https://api.scryfall.com/cards/autocomplete?q=${encodeURIComponent(q)}`
-      )
+      fetch(`https://api.scryfall.com/cards/autocomplete?q=${encodeURIComponent(q)}`)
         .then((r) => r.json())
         .then((data) => {
           const remote = (data.data || [])
-            .filter(
-              (name) =>
-                !localMatches.some(
-                  (m) => m.name.toLowerCase() === name.toLowerCase()
-                )
-            )
+            .filter((name) => !localMatches.some((m) => m.name.toLowerCase() === name.toLowerCase()))
             .slice(0, 6 - localMatches.length)
             .map((name) => ({ name, inDeck: false }));
           setSuggestions([...localMatches, ...remote]);
@@ -898,9 +930,7 @@ export default function App() {
   // Log Game Form State
   const [logDeckId, setLogDeckId] = useState('');
   const [logResult, setLogResult] = useState('win');
-  const [logDate, setLogDate] = useState(
-    () => new Date().toISOString().split('T')[0]
-  );
+  const [logDate, setLogDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [logPodSize, setLogPodSize] = useState(4);
   const [logMvpCard, setLogMvpCard] = useState('');
   const [logFunCard, setLogFunCard] = useState('');
@@ -932,36 +962,32 @@ export default function App() {
   };
 
   // ============================================================================
-  // FIREBASE AUTHENTICATION & PER-USER CLOUD SUBSCRIPTIONS
+  // FIREBASE AUTHENTICATION & LIVE FIRESTORE SYNC
   // ============================================================================
   useEffect(() => {
-    let active = true;
     const initAuth = async () => {
       try {
-        if (
-          typeof __initial_auth_token !== 'undefined' &&
-          __initial_auth_token
-        ) {
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
           await signInWithCustomToken(auth, __initial_auth_token);
         } else if (!auth.currentUser) {
           await signInAnonymously(auth);
         }
       } catch {
-        // Fallback handled by listener
+        // Fallback if anonymous auth is disabled on custom Firebase project
       }
     };
     initAuth();
 
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      if (!active) return;
       setUser(currentUser);
       setAuthReady(true);
+      if (!currentUser) {
+        setDecks([]);
+        setMatches([]);
+        setCloudLoading(false);
+      }
     });
-
-    return () => {
-      active = false;
-      unsubscribe();
-    };
+    return () => unsubscribe();
   }, []);
 
   useEffect(() => {
@@ -974,72 +1000,36 @@ export default function App() {
     }
 
     setCloudLoading(true);
-    let decksLoaded = false;
-    let matchesLoaded = false;
+    const decksRef = collection(db, 'artifacts', appId, 'users', user.uid, 'decks');
+    const matchesRef = collection(db, 'artifacts', appId, 'users', user.uid, 'matches');
 
-    const checkReady = () => {
-      if (decksLoaded && matchesLoaded) {
-        setCloudLoading(false);
-      }
-    };
-
-    const decksRef = collection(
-      db,
-      'artifacts',
-      appId,
-      'users',
-      user.uid,
-      'decks'
-    );
     const unsubDecks = onSnapshot(
       decksRef,
       (snapshot) => {
-        const loadedDecks = snapshot.docs
-          .map((d) => ({
-            bracket: 3,
-            archetype: '',
-            decklist: [],
-            revisions: [],
-            autoSync: false,
-            ...d.data(),
-            id: d.id,
-          }))
-          .sort((a, b) => (a.createdAt || '').localeCompare(b.createdAt || ''));
+        const loadedDecks = snapshot.docs.map((docSnap) => ({
+          id: docSnap.id,
+          ...docSnap.data()
+        }));
         setDecks(loadedDecks);
-        decksLoaded = true;
-        checkReady();
+        setCloudLoading(false);
       },
       () => {
-        decksLoaded = true;
-        checkReady();
+        setCloudLoading(false);
       }
     );
 
-    const matchesRef = collection(
-      db,
-      'artifacts',
-      appId,
-      'users',
-      user.uid,
-      'matches'
-    );
     const unsubMatches = onSnapshot(
       matchesRef,
       (snapshot) => {
         const loadedMatches = snapshot.docs
-          .map((d) => ({
-            ...d.data(),
-            id: d.id,
+          .map((docSnap) => ({
+            id: docSnap.id,
+            ...docSnap.data()
           }))
           .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
         setMatches(loadedMatches);
-        matchesLoaded = true;
-        checkReady();
       },
-      () => {
-        matchesLoaded = true;
-        checkReady();
-      }
+      () => {}
     );
 
     return () => {
@@ -1048,62 +1038,48 @@ export default function App() {
     };
   }, [authReady, user]);
 
-  // ============================================================================
-  // PER-USER CLOUD WRITE HELPERS
-  // ============================================================================
+  // Firestore Cloud Write Helpers
   const saveDeckToCloud = async (deckObj) => {
-    if (!user) return;
-    const deckRef = doc(
-      db,
-      'artifacts',
-      appId,
-      'users',
-      user.uid,
-      'decks',
-      deckObj.id
+    if (!user) {
+      openAccountModal('signup');
+      showToast('Sign in or create an account to save decks', 'error');
+      return;
+    }
+    await setDoc(
+      doc(db, 'artifacts', appId, 'users', user.uid, 'decks', deckObj.id),
+      deckObj
     );
-    await setDoc(deckRef, deckObj);
   };
 
   const deleteDeckFromCloud = async (deckId, relatedMatchIds = []) => {
     if (!user) return;
     const batch = writeBatch(db);
-    batch.delete(
-      doc(db, 'artifacts', appId, 'users', user.uid, 'decks', deckId)
-    );
+    batch.delete(doc(db, 'artifacts', appId, 'users', user.uid, 'decks', deckId));
     relatedMatchIds.forEach((mId) => {
-      batch.delete(
-        doc(db, 'artifacts', appId, 'users', user.uid, 'matches', mId)
-      );
+      batch.delete(doc(db, 'artifacts', appId, 'users', user.uid, 'matches', mId));
     });
     await batch.commit();
   };
 
   const saveMatchToCloud = async (matchObj) => {
-    if (!user) return;
-    const matchRef = doc(
-      db,
-      'artifacts',
-      appId,
-      'users',
-      user.uid,
-      'matches',
-      matchObj.id
+    if (!user) {
+      openAccountModal('signup');
+      showToast('Sign in or create an account to log matches', 'error');
+      return;
+    }
+    await setDoc(
+      doc(db, 'artifacts', appId, 'users', user.uid, 'matches', matchObj.id),
+      matchObj
     );
-    await setDoc(matchRef, matchObj);
   };
 
   const deleteMatchFromCloud = async (matchId) => {
     if (!user) return;
-    await deleteDoc(
-      doc(db, 'artifacts', appId, 'users', user.uid, 'matches', matchId)
-    );
+    await deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'matches', matchId));
   };
 
-  // ============================================================================
-  // PLAYER ACCOUNT HANDLERS (SIGN UP / SIGN IN / SIGN OUT)
-  // ============================================================================
-  const openAccountModal = (mode = 'signup') => {
+  // Account Modal & Auth Handlers
+  const openAccountModal = (mode = 'signin') => {
     setAuthMode(mode);
     setAuthError('');
     setAuthPassword('');
@@ -1114,7 +1090,6 @@ export default function App() {
     e.preventDefault();
     setAuthError('');
     setAuthSubmitting(true);
-
     try {
       if (authMode === 'signup') {
         const cred = await createUserWithEmailAndPassword(
@@ -1123,43 +1098,32 @@ export default function App() {
           authPassword
         );
         if (authDisplayName.trim()) {
-          await updateProfile(cred.user, {
-            displayName: authDisplayName.trim(),
-          });
+          await updateProfile(cred.user, { displayName: authDisplayName.trim() });
+          setUser({ ...cred.user, displayName: authDisplayName.trim() });
         }
         hasAutoSyncedRef.current = false;
         setIsAccountModalOpen(false);
-        showToast(
-          `Welcome, ${
-            authDisplayName.trim() || cred.user.email
-          }! Your personal vault is ready.`
-        );
+        showToast('Account created! Welcome to Commander Vault.');
       } else {
-        const cred = await signInWithEmailAndPassword(
-          auth,
-          authEmail.trim(),
-          authPassword
-        );
+        await signInWithEmailAndPassword(auth, authEmail.trim(), authPassword);
         hasAutoSyncedRef.current = false;
         setIsAccountModalOpen(false);
-        showToast(`Signed in as ${cred.user.displayName || cred.user.email}`);
+        showToast('Signed in! Your decks are synced.');
       }
     } catch (err) {
       const code = err?.code || '';
-      if (code === 'auth/email-already-in-use') {
-        setAuthError(
-          'An account with this email already exists. Try signing in instead.'
-        );
+      if (code.includes('email-already-in-use')) {
+        setAuthError('An account with that email already exists. Try signing in instead.');
       } else if (
-        code === 'auth/invalid-credential' ||
-        code === 'auth/wrong-password' ||
-        code === 'auth/user-not-found'
+        code.includes('invalid-credential') ||
+        code.includes('wrong-password') ||
+        code.includes('user-not-found')
       ) {
         setAuthError('Incorrect email or password. Please try again.');
-      } else if (code === 'auth/weak-password') {
-        setAuthError('Password must be at least 6 characters long.');
+      } else if (code.includes('weak-password')) {
+        setAuthError('Password must be at least 6 characters.');
       } else {
-        setAuthError(err?.message || 'Could not complete authentication.');
+        setAuthError(err?.message || 'Authentication failed. Check your Firebase config.');
       }
     } finally {
       setAuthSubmitting(false);
@@ -1173,33 +1137,35 @@ export default function App() {
       hasAutoSyncedRef.current = false;
       setSelectedDeckId(null);
       setIsAccountModalOpen(false);
-      showToast('Signed out — switched to Guest session');
+      showToast('Signed out');
     } catch {
-      showToast('Could not sign out', 'error');
+      setIsAccountModalOpen(false);
     }
   };
 
   // ============================================================================
-  // MOXFIELD SYNC & AUTO-CHECK ENGINE
+  // DECKLIST SYNC & AUTO-CHECK ENGINE (MOXFIELD & ARCHIDEKT)
   // ============================================================================
-  const syncDeckFromMoxfield = async (deck, silent = false) => {
+  const syncDeckFromUrl = async (deck, silent = false) => {
+    const siteName = getDeckSiteName(deck?.moxfieldUrl);
     if (!deck?.moxfieldUrl) {
       if (!silent) {
         setMoxfieldSyncBanner({
           type: 'warning',
-          message: 'Add a Moxfield deck URL first using the Edit button.',
+          message: 'Add a Moxfield or Archidekt deck URL first using the Edit button.'
         });
       }
       return;
     }
 
     const moxId = extractMoxfieldId(deck.moxfieldUrl);
-    if (!moxId) {
+    const archId = extractArchidektId(deck.moxfieldUrl);
+    if (!moxId && !archId) {
       if (!silent) {
         setMoxfieldSyncBanner({
           type: 'warning',
           message:
-            'Could not find a valid Moxfield deck ID in that URL (expected moxfield.com/decks/...).',
+            'Could not find a valid Moxfield or Archidekt deck ID in that URL (expected moxfield.com/decks/... or archidekt.com/decks/...).'
         });
       }
       return;
@@ -1211,7 +1177,7 @@ export default function App() {
     }
 
     try {
-      const parsedCards = await fetchMoxfieldCardsByUrl(deck.moxfieldUrl);
+      const parsedCards = await fetchDeckCardsByUrl(deck.moxfieldUrl);
       if (!parsedCards || parsedCards.length === 0) {
         throw new Error('Blocked or empty response');
       }
@@ -1221,11 +1187,7 @@ export default function App() {
       const nowIso = new Date().toISOString();
 
       let nextRevisions = deck.revisions || [];
-      if (
-        added.length > 0 ||
-        removed.length > 0 ||
-        existingCards.length === 0
-      ) {
+      if (added.length > 0 || removed.length > 0 || existingCards.length === 0) {
         nextRevisions = [
           {
             id: `rev-${Date.now()}`,
@@ -1233,13 +1195,13 @@ export default function App() {
             timestamp: Date.now(),
             note:
               existingCards.length === 0
-                ? 'Initial import from Moxfield'
-                : `Moxfield sync (+${added.length} / -${removed.length})`,
+                ? `Initial import from ${siteName}`
+                : `${siteName} sync (+${added.length} / -${removed.length})`,
             added,
             removed,
-            totalCards: parsedCards.reduce((sum, c) => sum + c.qty, 0),
+            totalCards: parsedCards.reduce((sum, c) => sum + c.qty, 0)
           },
-          ...nextRevisions,
+          ...nextRevisions
         ];
       }
 
@@ -1247,19 +1209,15 @@ export default function App() {
         ...deck,
         decklist: parsedCards,
         revisions: nextRevisions,
-        lastMoxfieldCheck: nowIso,
+        lastMoxfieldCheck: nowIso
       });
 
       if (!silent) {
-        if (
-          added.length === 0 &&
-          removed.length === 0 &&
-          existingCards.length > 0
-        ) {
-          showToast(`${deck.name} is already up to date with Moxfield!`);
+        if (added.length === 0 && removed.length === 0 && existingCards.length > 0) {
+          showToast(`${deck.name} is already up to date with ${siteName}!`);
         } else {
           showToast(
-            `Synced ${deck.name} (+${added.length} added, -${removed.length} removed)`
+            `Synced ${deck.name} from ${siteName} (+${added.length} added, -${removed.length} removed)`
           );
         }
       }
@@ -1268,7 +1226,9 @@ export default function App() {
         setMoxfieldSyncBanner({
           type: 'warning',
           message:
-            'Moxfield’s Cloudflare protection blocked automatic browser fetch. Open your Moxfield deck → Export → Copy for MTGO, then click "Paste from Clipboard" below to import & diff all 100 cards in 1 tap!',
+            siteName === 'Archidekt'
+              ? 'Could not fetch this Archidekt deck (make sure the deck is set to Public), or click "Paste from Clipboard" below to import your text export!'
+              : 'Moxfield’s Cloudflare protection blocked automatic browser fetch. Open your Moxfield deck → Export → Copy for MTGO, then click "Paste from Clipboard" below to import & diff all 100 cards in 1 tap!'
         });
       }
     } finally {
@@ -1282,7 +1242,7 @@ export default function App() {
     if (autoSyncDecks.length === 0) return;
     hasAutoSyncedRef.current = true;
     autoSyncDecks.forEach((d) => {
-      syncDeckFromMoxfield(d, true);
+      syncDeckFromUrl(d, true);
     });
   }, [cloudLoading, decks]);
 
@@ -1292,10 +1252,8 @@ export default function App() {
   const analytics = useMemo(() => {
     const totalGames = matches.length;
     const totalWins = matches.filter((m) => m.result === 'win').length;
-    const overallWinRate =
-      totalGames > 0 ? Math.round((totalWins / totalGames) * 100) : 0;
-    const idealPlayShare =
-      decks.length > 0 ? Math.round((100 / decks.length) * 10) / 10 : 0;
+    const overallWinRate = totalGames > 0 ? Math.round((totalWins / totalGames) * 100) : 0;
+    const idealPlayShare = decks.length > 0 ? Math.round((100 / decks.length) * 10) / 10 : 0;
 
     // Global MVP & Fun card counts
     const globalMvpMap = new Map();
@@ -1335,7 +1293,7 @@ export default function App() {
       'snow-covered island',
       'snow-covered swamp',
       'snow-covered mountain',
-      'snow-covered forest',
+      'snow-covered forest'
     ]);
 
     const deckStats = decks.map((deck) => {
@@ -1344,8 +1302,7 @@ export default function App() {
       const wins = deckMatches.filter((m) => m.result === 'win').length;
       const losses = games - wins;
       const winRate = games > 0 ? Math.round((wins / games) * 100) : 0;
-      const playShare =
-        totalGames > 0 ? Math.round((games / totalGames) * 1000) / 10 : 0;
+      const playShare = totalGames > 0 ? Math.round((games / totalGames) * 1000) / 10 : 0;
 
       // Sort deck matches newest-first for lastPlayed & streak
       const sortedMatches = [...deckMatches].sort(
@@ -1385,53 +1342,37 @@ export default function App() {
       const topMvpCards = Array.from(mvpMap.values()).sort(
         (a, b) => b.count - a.count || b.wins - a.wins
       );
-      const topFunCards = Array.from(funMap.values()).sort(
-        (a, b) => b.count - a.count
-      );
+      const topFunCards = Array.from(funMap.values()).sort((a, b) => b.count - a.count);
 
       // All-stars vs Cut Candidates
       const nominatedLower = new Set([
         ...Array.from(mvpMap.keys()).map((n) => n.toLowerCase()),
-        ...Array.from(funMap.keys()).map((n) => n.toLowerCase()),
+        ...Array.from(funMap.keys()).map((n) => n.toLowerCase())
       ]);
       const allStarCards = Array.from(
-        new Set([
-          ...topMvpCards.map((c) => c.name),
-          ...topFunCards.map((c) => c.name),
-        ])
+        new Set([...topMvpCards.map((c) => c.name), ...topFunCards.map((c) => c.name)])
       );
       const cutCandidates = (deck.decklist || [])
         .map((c) => c.name)
         .filter(
           (name) =>
-            !basicLands.has(name.toLowerCase()) &&
-            !nominatedLower.has(name.toLowerCase())
+            !basicLands.has(name.toLowerCase()) && !nominatedLower.has(name.toLowerCase())
         );
 
       // Patch / Revision Win-Rate Impact
       let patchImpact = null;
       const latestRev = (deck.revisions || [])[0];
       if (latestRev && latestRev.timestamp) {
-        const preMatches = deckMatches.filter(
-          (m) => (m.timestamp || 0) < latestRev.timestamp
-        );
-        const postMatches = deckMatches.filter(
-          (m) => (m.timestamp || 0) >= latestRev.timestamp
-        );
+        const preMatches = deckMatches.filter((m) => (m.timestamp || 0) < latestRev.timestamp);
+        const postMatches = deckMatches.filter((m) => (m.timestamp || 0) >= latestRev.timestamp);
         const preWins = preMatches.filter((m) => m.result === 'win').length;
         const postWins = postMatches.filter((m) => m.result === 'win').length;
         const preWinRate =
-          preMatches.length > 0
-            ? Math.round((preWins / preMatches.length) * 100)
-            : null;
+          preMatches.length > 0 ? Math.round((preWins / preMatches.length) * 100) : null;
         const postWinRate =
-          postMatches.length > 0
-            ? Math.round((postWins / postMatches.length) * 100)
-            : null;
+          postMatches.length > 0 ? Math.round((postWins / postMatches.length) * 100) : null;
         const delta =
-          preWinRate !== null && postWinRate !== null
-            ? postWinRate - preWinRate
-            : null;
+          preWinRate !== null && postWinRate !== null ? postWinRate - preWinRate : null;
 
         patchImpact = {
           revision: latestRev,
@@ -1443,14 +1384,11 @@ export default function App() {
           postWins,
           postLosses: postMatches.length - postWins,
           postWinRate,
-          delta,
+          delta
         };
       }
 
-      const totalCardCount = (deck.decklist || []).reduce(
-        (sum, c) => sum + c.qty,
-        0
-      );
+      const totalCardCount = (deck.decklist || []).reduce((sum, c) => sum + c.qty, 0);
 
       return {
         ...deck,
@@ -1467,31 +1405,25 @@ export default function App() {
         allStarCards,
         cutCandidates,
         patchImpact,
-        totalCardCount,
+        totalCardCount
       };
     });
 
     // KPI Highlights
     const leastPlayed =
       deckStats.length > 0
-        ? [...deckStats].sort(
-            (a, b) => a.games - b.games || a.name.localeCompare(b.name)
-          )[0]
+        ? [...deckStats].sort((a, b) => a.games - b.games || a.name.localeCompare(b.name))[0]
         : null;
 
     const playedDecks = deckStats.filter((d) => d.games > 0);
     const mostPlayed =
       playedDecks.length > 0
-        ? [...playedDecks].sort(
-            (a, b) => b.games - a.games || b.winRate - a.winRate
-          )[0]
+        ? [...playedDecks].sort((a, b) => b.games - a.games || b.winRate - a.winRate)[0]
         : null;
 
     const highestWinRate =
       playedDecks.length > 0
-        ? [...playedDecks].sort(
-            (a, b) => b.winRate - a.winRate || b.wins - a.wins
-          )[0]
+        ? [...playedDecks].sort((a, b) => b.winRate - a.winRate || b.wins - a.wins)[0]
         : null;
 
     // Bracket Breakdown (1-5)
@@ -1505,7 +1437,7 @@ export default function App() {
         deckCount: bDecks.length,
         games,
         wins,
-        winRate,
+        winRate
       };
     });
 
@@ -1520,7 +1452,7 @@ export default function App() {
       highestWinRate,
       topGlobalMvp,
       topGlobalFun,
-      bracketStats,
+      bracketStats
     };
   }, [decks, matches]);
 
@@ -1535,25 +1467,17 @@ export default function App() {
       return (
         d.name.toLowerCase().includes(q) ||
         (d.archetype || '').toLowerCase().includes(q) ||
-        getGuildOrShardName(d.colors || [])
-          .toLowerCase()
-          .includes(q)
+        getGuildOrShardName(d.colors || []).toLowerCase().includes(q)
       );
     });
 
     switch (sortBy) {
       case 'least_played':
-        return [...filtered].sort(
-          (a, b) => a.games - b.games || a.name.localeCompare(b.name)
-        );
+        return [...filtered].sort((a, b) => a.games - b.games || a.name.localeCompare(b.name));
       case 'most_played':
-        return [...filtered].sort(
-          (a, b) => b.games - a.games || b.winRate - a.winRate
-        );
+        return [...filtered].sort((a, b) => b.games - a.games || b.winRate - a.winRate);
       case 'win_rate':
-        return [...filtered].sort(
-          (a, b) => b.winRate - a.winRate || b.games - a.games
-        );
+        return [...filtered].sort((a, b) => b.winRate - a.winRate || b.games - a.games);
       case 'last_played':
         return [...filtered].sort((a, b) =>
           (b.lastPlayed || '').localeCompare(a.lastPlayed || '')
@@ -1570,10 +1494,7 @@ export default function App() {
   const spinCandidateDecks = useMemo(() => {
     const todayStr = new Date().toISOString().split('T')[0];
     const pool = analytics.deckStats.filter((d) => {
-      if (
-        spinBracketFilter !== 'all' &&
-        String(d.bracket || 3) !== spinBracketFilter
-      ) {
+      if (spinBracketFilter !== 'all' && String(d.bracket || 3) !== spinBracketFilter) {
         return false;
       }
       if (spinExcludeToday && d.lastPlayed === todayStr) {
@@ -1586,13 +1507,13 @@ export default function App() {
     const maxGames = Math.max(...pool.map((d) => d.games), 0);
     const weighted = pool.map((d) => ({
       ...d,
-      weight: Math.pow(maxGames - d.games + 1, 1.5),
+      weight: Math.pow(maxGames - d.games + 1, 1.5)
     }));
     const totalWeight = weighted.reduce((s, d) => s + d.weight, 0);
 
     return weighted.map((d) => ({
       ...d,
-      oddsPercent: Math.round((d.weight / totalWeight) * 1000) / 10,
+      oddsPercent: Math.round((d.weight / totalWeight) * 1000) / 10
     }));
   }, [analytics.deckStats, spinBracketFilter, spinExcludeToday]);
 
@@ -1626,9 +1547,7 @@ export default function App() {
     const interval = setInterval(() => {
       ticks += 1;
       const randomPreview =
-        spinCandidateDecks[
-          Math.floor(Math.random() * spinCandidateDecks.length)
-        ];
+        spinCandidateDecks[Math.floor(Math.random() * spinCandidateDecks.length)];
       setSpinResultDeckId(randomPreview.id);
       if (ticks >= 12) {
         clearInterval(interval);
@@ -1666,7 +1585,7 @@ export default function App() {
       mvpCard: '',
       funCard: '',
       notes: '',
-      timestamp: Date.now(),
+      timestamp: Date.now()
     };
 
     await saveMatchToCloud(newMatch);
@@ -1686,7 +1605,7 @@ export default function App() {
       await saveMatchToCloud({
         ...existing,
         mvpCard: quickMvpCard.trim(),
-        funCard: quickFunCard.trim(),
+        funCard: quickFunCard.trim()
       });
       showToast('Match standout cards saved!');
     }
@@ -1707,15 +1626,13 @@ export default function App() {
       mvpCard: logMvpCard.trim(),
       funCard: logFunCard.trim(),
       notes: logNotes.trim(),
-      timestamp: Date.now(),
+      timestamp: Date.now()
     };
 
     await saveMatchToCloud(newMatch);
     setIsLogModalOpen(false);
     showToast(
-      `Logged ${logResult === 'win' ? 'Victory' : 'Loss'} for ${
-        deck?.name || 'Deck'
-      }!`,
+      `Logged ${logResult === 'win' ? 'Victory' : 'Loss'} for ${deck?.name || 'Deck'}!`,
       logResult === 'win' ? 'win' : 'success'
     );
   };
@@ -1731,9 +1648,7 @@ export default function App() {
     setIsEditingList(false);
     setDecklistSearch('');
     setMoxfieldSyncBanner(null);
-    setPreviewCardName(
-      deck.primaryCommander || deck.name.split(' & ')[0] || ''
-    );
+    setPreviewCardName(deck.primaryCommander || deck.name.split(' & ')[0] || '');
   };
 
   const toggleDeckAutoSync = async (deckId) => {
@@ -1743,8 +1658,8 @@ export default function App() {
     await saveDeckToCloud({ ...deck, autoSync: nextAuto });
     showToast(
       nextAuto
-        ? 'Auto-check Moxfield enabled on app load'
-        : 'Auto-check Moxfield disabled'
+        ? 'Auto-check deck URL enabled on app load'
+        : 'Auto-check deck URL disabled'
     );
   };
 
@@ -1767,21 +1682,19 @@ export default function App() {
           : `Decklist update (+${added.length} / -${removed.length})`),
       added,
       removed,
-      totalCards: parsedCards.reduce((s, c) => s + c.qty, 0),
+      totalCards: parsedCards.reduce((s, c) => s + c.qty, 0)
     };
 
     await saveDeckToCloud({
       ...deck,
       decklist: parsedCards,
-      revisions: [newRevision, ...(deck.revisions || [])],
+      revisions: [newRevision, ...(deck.revisions || [])]
     });
 
     setIsEditingList(false);
     setMoxfieldSyncBanner(null);
     showToast(
-      `Saved ${parsedCards.reduce((s, c) => s + c.qty, 0)} cards (+${
-        added.length
-      } / -${removed.length})`
+      `Saved ${parsedCards.reduce((s, c) => s + c.qty, 0)} cards (+${added.length} / -${removed.length})`
     );
   };
 
@@ -1790,26 +1703,20 @@ export default function App() {
       const clipText = await navigator.clipboard.readText();
       const parsed = parseDecklistText(clipText);
       if (!parsed || parsed.length === 0) {
-        showToast(
-          'No valid MTG card list found in clipboard. Copy from Moxfield first!',
-          'error'
-        );
+        showToast('No valid MTG card list found in clipboard. Copy from Moxfield/Archidekt first!', 'error');
         return;
       }
       setDecklistDraft(clipText);
-      setRevisionNote('Imported from Moxfield clipboard');
+      setRevisionNote('Imported from clipboard');
       setIsEditingList(true);
       setMoxfieldSyncBanner(null);
       showToast(
-        `Loaded ${parsed.reduce(
-          (s, c) => s + c.qty,
-          0
-        )} cards from clipboard — review & click Save!`
+        `Loaded ${parsed.reduce((s, c) => s + c.qty, 0)} cards from clipboard — review & click Save!`
       );
     } catch {
       setDecklistDraft(serializeDecklist(selectedDeck?.decklist || []));
       setIsEditingList(true);
-      showToast('Paste your Moxfield list into the box below', 'success');
+      showToast('Paste your decklist into the box below', 'success');
     }
   };
 
@@ -1836,9 +1743,7 @@ export default function App() {
     setEditingDeck(deck);
 
     if (deck.partnerCommander) {
-      setDeckName(
-        deck.primaryCommander || deck.name.split(' & ')[0] || deck.name
-      );
+      setDeckName(deck.primaryCommander || deck.name.split(' & ')[0] || deck.name);
       setHasPartner(true);
       setPartnerName(deck.partnerCommander);
     } else if (deck.name.includes(' & ')) {
@@ -1876,9 +1781,9 @@ export default function App() {
     setPartnerName(card.name);
     const nextPartner = card.colors || [];
     setPartnerColors(nextPartner);
-    const combined = Array.from(
-      new Set([...primaryColors, ...nextPartner])
-    ).sort((a, b) => COLOR_ORDER.indexOf(a) - COLOR_ORDER.indexOf(b));
+    const combined = Array.from(new Set([...primaryColors, ...nextPartner])).sort(
+      (a, b) => COLOR_ORDER.indexOf(a) - COLOR_ORDER.indexOf(b)
+    );
     setDeckColors(combined);
   };
 
@@ -1910,9 +1815,7 @@ export default function App() {
 
       const cleanUrl = deckMoxfield.trim();
       const formattedUrl =
-        cleanUrl &&
-        !cleanUrl.startsWith('http://') &&
-        !cleanUrl.startsWith('https://')
+        cleanUrl && !cleanUrl.startsWith('http://') && !cleanUrl.startsWith('https://')
           ? `https://${cleanUrl}`
           : cleanUrl;
 
@@ -1923,36 +1826,32 @@ export default function App() {
         let nextRevisions = editingDeck.revisions || [];
         let lastMoxfieldCheck = editingDeck.lastMoxfieldCheck || null;
         let autoSync = editingDeck.autoSync || false;
-        let fetchedFromMoxfield = false;
+        let fetchedFromSite = false;
 
-        const urlChanged =
-          formattedUrl && formattedUrl !== (editingDeck.moxfieldUrl || '');
+        const urlChanged = formattedUrl && formattedUrl !== (editingDeck.moxfieldUrl || '');
+        const siteLabel = getDeckSiteName(formattedUrl);
         if (formattedUrl && (urlChanged || nextDecklist.length === 0)) {
-          const imported = await fetchMoxfieldCardsByUrl(formattedUrl);
+          const imported = await fetchDeckCardsByUrl(formattedUrl);
           if (imported && imported.length > 0) {
             const { added, removed } = diffDecklists(nextDecklist, imported);
-            if (
-              added.length > 0 ||
-              removed.length > 0 ||
-              nextDecklist.length === 0
-            ) {
+            if (added.length > 0 || removed.length > 0 || nextDecklist.length === 0) {
               nextRevisions = [
                 {
                   id: `rev-${Date.now()}`,
                   date: new Date().toISOString().split('T')[0],
                   timestamp: Date.now(),
-                  note: 'Imported from Moxfield URL',
+                  note: `Imported from ${siteLabel} URL`,
                   added,
                   removed,
-                  totalCards: imported.reduce((s, c) => s + c.qty, 0),
+                  totalCards: imported.reduce((s, c) => s + c.qty, 0)
                 },
-                ...nextRevisions,
+                ...nextRevisions
               ];
             }
             nextDecklist = imported;
             lastMoxfieldCheck = new Date().toISOString();
             autoSync = true;
-            fetchedFromMoxfield = true;
+            fetchedFromSite = true;
           }
         }
 
@@ -1968,35 +1867,36 @@ export default function App() {
           decklist: nextDecklist,
           revisions: nextRevisions,
           lastMoxfieldCheck,
-          autoSync,
+          autoSync
         };
         await saveDeckToCloud(updatedDeck);
 
-        if (fetchedFromMoxfield) {
+        if (fetchedFromSite) {
           showToast(
             `Updated ${combinedName} & synced ${nextDecklist.reduce(
               (s, c) => s + c.qty,
               0
-            )} cards from Moxfield!`
+            )} cards from ${siteLabel}!`
           );
         } else if (formattedUrl && urlChanged) {
           showToast(
-            `Saved ${combinedName}. Open deck & click "Update / Paste List" if Moxfield blocks auto-fetch.`
+            `Saved ${combinedName}. Open deck & click "Paste from Clipboard" if ${siteLabel} blocks auto-fetch.`
           );
         } else {
           showToast(`Updated ${combinedName}`);
         }
       } else {
         let finalCards = manualParsedCards;
+        const siteLabel = getDeckSiteName(formattedUrl);
         let revisionNoteText = 'Initial decklist imported';
-        let fetchedFromMoxfield = false;
+        let fetchedFromSite = false;
 
         if (finalCards.length === 0 && formattedUrl) {
-          const imported = await fetchMoxfieldCardsByUrl(formattedUrl);
+          const imported = await fetchDeckCardsByUrl(formattedUrl);
           if (imported && imported.length > 0) {
             finalCards = imported;
-            revisionNoteText = 'Imported from Moxfield URL';
-            fetchedFromMoxfield = true;
+            revisionNoteText = `Imported from ${siteLabel} URL`;
+            fetchedFromSite = true;
           }
         }
 
@@ -2010,8 +1910,8 @@ export default function App() {
                   note: revisionNoteText,
                   added: finalCards,
                   removed: [],
-                  totalCards: finalCards.reduce((s, c) => s + c.qty, 0),
-                },
+                  totalCards: finalCards.reduce((s, c) => s + c.qty, 0)
+                }
               ]
             : [];
 
@@ -2027,23 +1927,21 @@ export default function App() {
           decklist: finalCards,
           revisions: initialRevisions,
           autoSync: Boolean(formattedUrl),
-          lastMoxfieldCheck: fetchedFromMoxfield
-            ? new Date().toISOString()
-            : null,
-          createdAt: new Date().toISOString(),
+          lastMoxfieldCheck: fetchedFromSite ? new Date().toISOString() : null,
+          createdAt: new Date().toISOString()
         };
         await saveDeckToCloud(newDeck);
 
-        if (fetchedFromMoxfield) {
+        if (fetchedFromSite) {
           showToast(
             `Added ${newDeck.name} with ${finalCards.reduce(
               (s, c) => s + c.qty,
               0
-            )} cards from Moxfield!`
+            )} cards from ${siteLabel}!`
           );
         } else if (formattedUrl && finalCards.length === 0) {
           showToast(
-            `Added ${newDeck.name}! Open the deck to paste your list if Moxfield blocks browser sync.`
+            `Added ${newDeck.name}! Open the deck to paste your list if ${siteLabel} blocks browser sync.`
           );
         } else {
           showToast(`Added ${newDeck.name} to your roster!`);
@@ -2069,7 +1967,7 @@ export default function App() {
         if (selectedDeckId === deck.id) setSelectedDeckId(null);
         setConfirmAction(null);
         showToast(`Removed ${deck.name}`);
-      },
+      }
     });
   };
 
@@ -2081,17 +1979,13 @@ export default function App() {
       exportedAt: new Date().toISOString(),
       version: 3,
       decks,
-      matches,
+      matches
     };
-    const blob = new Blob([JSON.stringify(payload, null, 2)], {
-      type: 'application/json',
-    });
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `commander-tracker-backup-${
-      new Date().toISOString().split('T')[0]
-    }.json`;
+    a.download = `commander-tracker-backup-${new Date().toISOString().split('T')[0]}.json`;
     a.click();
     URL.revokeObjectURL(url);
     showToast('Backup JSON downloaded!');
@@ -2107,7 +2001,7 @@ export default function App() {
       'Pod Size',
       'Card of the Match (MVP)',
       'Most Fun Card',
-      'Notes',
+      'Notes'
     ];
     const rows = matches.map((m) => {
       const deck = decks.find((d) => d.id === m.deckId);
@@ -2120,7 +2014,7 @@ export default function App() {
         m.podSize || 4,
         `"${(m.mvpCard || '').replace(/"/g, '""')}"`,
         `"${(m.funCard || '').replace(/"/g, '""')}"`,
-        `"${(m.notes || '').replace(/"/g, '""')}"`,
+        `"${(m.notes || '').replace(/"/g, '""')}"`
       ].join(',');
     });
     const csvContent = [headers.join(','), ...rows].join('\n');
@@ -2128,9 +2022,7 @@ export default function App() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `commander-match-log-${
-      new Date().toISOString().split('T')[0]
-    }.csv`;
+    a.download = `commander-match-log-${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
     URL.revokeObjectURL(url);
     showToast('Match log CSV downloaded!');
@@ -2143,11 +2035,7 @@ export default function App() {
     reader.onload = async (event) => {
       try {
         const parsed = JSON.parse(event.target.result);
-        if (
-          Array.isArray(parsed.decks) &&
-          Array.isArray(parsed.matches) &&
-          user
-        ) {
+        if (Array.isArray(parsed.decks) && Array.isArray(parsed.matches) && user) {
           const batch = writeBatch(db);
           parsed.decks.forEach((d) => {
             const cleanDeck = {
@@ -2156,18 +2044,10 @@ export default function App() {
               decklist: [],
               revisions: [],
               autoSync: false,
-              ...d,
+              ...d
             };
             batch.set(
-              doc(
-                db,
-                'artifacts',
-                appId,
-                'users',
-                user.uid,
-                'decks',
-                cleanDeck.id
-              ),
+              doc(db, 'artifacts', appId, 'users', user.uid, 'decks', cleanDeck.id),
               cleanDeck
             );
           });
@@ -2235,9 +2115,7 @@ export default function App() {
           <div className="flex items-center gap-2 sm:gap-2.5">
             {/* Account Profile / Sign-In Pill */}
             <button
-              onClick={() =>
-                openAccountModal(isGuestAccount ? 'signup' : 'signin')
-              }
+              onClick={() => openAccountModal(isGuestAccount ? 'signup' : 'signin')}
               title={
                 isGuestAccount
                   ? 'Create an account or sign in to save your decks across devices'
@@ -2300,11 +2178,7 @@ export default function App() {
           {[
             { id: 'dashboard', label: 'Overview & Analytics', icon: BarChart3 },
             { id: 'decks', label: `My Decks (${decks.length})`, icon: Layers },
-            {
-              id: 'history',
-              label: `Match History (${matches.length})`,
-              icon: History,
-            },
+            { id: 'history', label: `Match History (${matches.length})`, icon: History }
           ].map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -2339,12 +2213,10 @@ export default function App() {
               </div>
               <div>
                 <h2 className="text-xs sm:text-sm font-bold text-white">
-                  Sign in or create an account to save & sync your personal
-                  decks
+                  Sign in or create an account to save & sync your personal decks
                 </h2>
                 <p className="text-xs text-slate-400">
-                  Every player gets their own private Commander roster,
-                  decklists, and match history across phone & desktop.
+                  Every player gets their own private Commander roster, decklists, and match history across phone & desktop.
                 </p>
               </div>
             </div>
@@ -2380,9 +2252,7 @@ export default function App() {
                   : `Welcome, ${accountLabel}! Your Vault is Ready`}
               </h2>
               <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
-                Add your personal commanders (including Partners & Backgrounds),
-                link or paste your Moxfield decklists, and start tracking match
-                win rates, rotation share, and standout cards.
+                Add your personal commanders (including Partners & Backgrounds), link or paste your Moxfield decklists, and start tracking match win rates, rotation share, and standout cards.
               </p>
             </div>
             <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
@@ -2427,15 +2297,11 @@ export default function App() {
                 </div>
                 <div className="mt-3">
                   <div className="text-2xl font-extrabold text-white">
-                    {analytics.totalWins}W –{' '}
-                    {analytics.totalGames - analytics.totalWins}L
+                    {analytics.totalWins}W – {analytics.totalGames - analytics.totalWins}L
                   </div>
                   <div className="flex items-center justify-between mt-1.5 text-xs text-slate-400">
                     <span>
-                      Win Rate:{' '}
-                      <strong className="text-amber-300">
-                        {analytics.overallWinRate}%
-                      </strong>
+                      Win Rate: <strong className="text-amber-300">{analytics.overallWinRate}%</strong>
                     </span>
                     <span>{analytics.totalGames} Total Games</span>
                   </div>
@@ -2444,9 +2310,7 @@ export default function App() {
 
               {/* KPI 2: Needs Table Time (Least Played) */}
               <div
-                onClick={() =>
-                  analytics.leastPlayed && openDeckDrawer(analytics.leastPlayed)
-                }
+                onClick={() => analytics.leastPlayed && openDeckDrawer(analytics.leastPlayed)}
                 className="rounded-2xl bg-slate-900/90 border border-slate-800 hover:border-slate-700 p-5 flex flex-col justify-between cursor-pointer transition-colors"
               >
                 <div className="flex items-center justify-between">
@@ -2468,12 +2332,8 @@ export default function App() {
                       </div>
                       <div className="flex items-center justify-between mt-1.5">
                         <span className="text-xs text-slate-400">
-                          Only{' '}
-                          <strong className="text-indigo-300">
-                            {analytics.leastPlayed.games}
-                          </strong>{' '}
-                          {analytics.leastPlayed.games === 1 ? 'game' : 'games'}{' '}
-                          played
+                          Only <strong className="text-indigo-300">{analytics.leastPlayed.games}</strong>{' '}
+                          {analytics.leastPlayed.games === 1 ? 'game' : 'games'} played
                         </span>
                         <div className="flex gap-1">
                           {analytics.leastPlayed.colors.map((c) => (
@@ -2483,18 +2343,14 @@ export default function App() {
                       </div>
                     </>
                   ) : (
-                    <p className="text-xs text-slate-500 mt-1">
-                      No decks available
-                    </p>
+                    <p className="text-xs text-slate-500 mt-1">No decks available</p>
                   )}
                 </div>
               </div>
 
               {/* KPI 3: Most Played Commander */}
               <div
-                onClick={() =>
-                  analytics.mostPlayed && openDeckDrawer(analytics.mostPlayed)
-                }
+                onClick={() => analytics.mostPlayed && openDeckDrawer(analytics.mostPlayed)}
                 className="rounded-2xl bg-slate-900/90 border border-slate-800 hover:border-slate-700 p-5 flex flex-col justify-between cursor-pointer transition-colors"
               >
                 <div className="flex items-center justify-between">
@@ -2516,10 +2372,8 @@ export default function App() {
                       </div>
                       <div className="flex items-center justify-between mt-1.5">
                         <span className="text-xs text-slate-400">
-                          <strong className="text-rose-300">
-                            {analytics.mostPlayed.games}
-                          </strong>{' '}
-                          games ({analytics.mostPlayed.playShare}% share)
+                          <strong className="text-rose-300">{analytics.mostPlayed.games}</strong> games (
+                          {analytics.mostPlayed.playShare}% share)
                         </span>
                         <div className="flex gap-1">
                           {analytics.mostPlayed.colors.map((c) => (
@@ -2529,19 +2383,14 @@ export default function App() {
                       </div>
                     </>
                   ) : (
-                    <p className="text-xs text-slate-500 mt-1">
-                      Log your first game to track
-                    </p>
+                    <p className="text-xs text-slate-500 mt-1">Log your first game to track</p>
                   )}
                 </div>
               </div>
 
               {/* KPI 4: Highest Win Rate */}
               <div
-                onClick={() =>
-                  analytics.highestWinRate &&
-                  openDeckDrawer(analytics.highestWinRate)
-                }
+                onClick={() => analytics.highestWinRate && openDeckDrawer(analytics.highestWinRate)}
                 className="rounded-2xl bg-slate-900/90 border border-slate-800 hover:border-slate-700 p-5 flex flex-col justify-between cursor-pointer transition-colors"
               >
                 <div className="flex items-center justify-between">
@@ -2563,11 +2412,8 @@ export default function App() {
                       </div>
                       <div className="flex items-center justify-between mt-1.5">
                         <span className="text-xs text-slate-400">
-                          <strong className="text-emerald-400">
-                            {analytics.highestWinRate.winRate}%
-                          </strong>{' '}
-                          win rate ({analytics.highestWinRate.wins}W–
-                          {analytics.highestWinRate.losses}L)
+                          <strong className="text-emerald-400">{analytics.highestWinRate.winRate}%</strong>{' '}
+                          win rate ({analytics.highestWinRate.wins}W–{analytics.highestWinRate.losses}L)
                         </span>
                         <div className="flex gap-1">
                           {analytics.highestWinRate.colors.map((c) => (
@@ -2577,9 +2423,7 @@ export default function App() {
                       </div>
                     </>
                   ) : (
-                    <p className="text-xs text-slate-500 mt-1">
-                      Log a game to calculate win rates
-                    </p>
+                    <p className="text-xs text-slate-500 mt-1">Log a game to calculate win rates</p>
                   )}
                 </div>
               </div>
@@ -2610,9 +2454,7 @@ export default function App() {
                       key={bStat.bracket}
                       type="button"
                       onClick={() =>
-                        setBracketFilter(
-                          isActive ? 'all' : String(bStat.bracket)
-                        )
+                        setBracketFilter(isActive ? 'all' : String(bStat.bracket))
                       }
                       className={`p-3 rounded-xl border text-left transition-all ${
                         isActive
@@ -2627,17 +2469,13 @@ export default function App() {
                           {meta.short}
                         </span>
                         <span className="text-[11px] text-slate-400 font-semibold">
-                          {bStat.deckCount}{' '}
-                          {bStat.deckCount === 1 ? 'deck' : 'decks'}
+                          {bStat.deckCount} {bStat.deckCount === 1 ? 'deck' : 'decks'}
                         </span>
                       </div>
                       <div className="text-xs text-slate-300 mt-1.5">
                         {bStat.games > 0 ? (
                           <span>
-                            <strong className="text-white">
-                              {bStat.winRate}%
-                            </strong>{' '}
-                            WR ({bStat.wins}W–
+                            <strong className="text-white">{bStat.winRate}%</strong> WR ({bStat.wins}W–
                             {bStat.games - bStat.wins}L)
                           </span>
                         ) : (
@@ -2662,23 +2500,15 @@ export default function App() {
                       <Star className="w-4 h-4" />
                     </div>
                     <div>
-                      <h3 className="text-sm font-bold text-white">
-                        Card of the Match Hall of Fame
-                      </h3>
-                      <p className="text-[11px] text-slate-400">
-                        Most influential MVPs across your pods
-                      </p>
+                      <h3 className="text-sm font-bold text-white">Card of the Match Hall of Fame</h3>
+                      <p className="text-[11px] text-slate-400">Most influential MVPs across your pods</p>
                     </div>
                   </div>
                 </div>
 
                 {analytics.topGlobalMvp.length === 0 ? (
                   <p className="text-xs text-slate-500 py-4">
-                    Nominate a{' '}
-                    <strong className="text-slate-300">
-                      Card of the Match
-                    </strong>{' '}
-                    when logging games to crown your top performers.
+                    Nominate a <strong className="text-slate-300">Card of the Match</strong> when logging games to crown your top performers.
                   </p>
                 ) : (
                   <div className="space-y-2">
@@ -2691,9 +2521,7 @@ export default function App() {
                           <span className="w-5 h-5 rounded-full bg-amber-500/20 text-amber-300 font-bold flex items-center justify-center text-[11px] shrink-0">
                             {idx + 1}
                           </span>
-                          <span className="font-semibold text-slate-100 truncate">
-                            {card.name}
-                          </span>
+                          <span className="font-semibold text-slate-100 truncate">{card.name}</span>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
                           <span className="text-slate-400">{card.wins}W</span>
@@ -2715,21 +2543,15 @@ export default function App() {
                       <Smile className="w-4 h-4" />
                     </div>
                     <div>
-                      <h3 className="text-sm font-bold text-white">
-                        Most Fun Cards
-                      </h3>
-                      <p className="text-[11px] text-slate-400">
-                        Cards creating the best table moments
-                      </p>
+                      <h3 className="text-sm font-bold text-white">Most Fun Cards</h3>
+                      <p className="text-[11px] text-slate-400">Cards creating the best table moments</p>
                     </div>
                   </div>
                 </div>
 
                 {analytics.topGlobalFun.length === 0 ? (
                   <p className="text-xs text-slate-500 py-4">
-                    Nominate a{' '}
-                    <strong className="text-slate-300">Most Fun Card</strong>{' '}
-                    after games to track your table favorites.
+                    Nominate a <strong className="text-slate-300">Most Fun Card</strong> after games to track your table favorites.
                   </p>
                 ) : (
                   <div className="space-y-2">
@@ -2742,9 +2564,7 @@ export default function App() {
                           <span className="w-5 h-5 rounded-full bg-pink-500/20 text-pink-300 font-bold flex items-center justify-center text-[11px] shrink-0">
                             {idx + 1}
                           </span>
-                          <span className="font-semibold text-slate-100 truncate">
-                            {card.name}
-                          </span>
+                          <span className="font-semibold text-slate-100 truncate">{card.name}</span>
                         </div>
                         <span className="px-2 py-0.5 rounded-full bg-pink-500/15 text-pink-300 border border-pink-500/30 font-bold shrink-0">
                           {card.count}× Fun
@@ -2766,12 +2586,9 @@ export default function App() {
                     Deck Rotation & Win Rate Breakdown
                   </h2>
                   <p className="text-xs text-slate-400">
-                    Equal rotation across {decks.length}{' '}
-                    {decks.length === 1 ? 'deck' : 'decks'} is{' '}
-                    <span className="text-indigo-300 font-semibold">
-                      ~{analytics.idealPlayShare}%
-                    </span>{' '}
-                    play share • Standard 4-player pod baseline win rate is{' '}
+                    Equal rotation across {decks.length} {decks.length === 1 ? 'deck' : 'decks'} is{' '}
+                    <span className="text-indigo-300 font-semibold">~{analytics.idealPlayShare}%</span> play
+                    share • Standard 4-player pod baseline win rate is{' '}
                     <span className="text-emerald-400 font-semibold">25%</span>
                   </p>
                 </div>
@@ -2812,9 +2629,7 @@ export default function App() {
                         <div className="flex items-center gap-2">
                           <div className="flex-1 h-2 rounded-full bg-slate-800 overflow-hidden relative">
                             <div
-                              style={{
-                                width: `${Math.min(100, deck.playShare)}%`,
-                              }}
+                              style={{ width: `${Math.min(100, deck.playShare)}%` }}
                               className="h-full bg-gradient-to-r from-indigo-500 to-indigo-400 rounded-full transition-all duration-500"
                             />
                           </div>
@@ -2831,9 +2646,7 @@ export default function App() {
                               className="absolute top-0 bottom-0 w-0.5 bg-slate-500/70 z-10"
                             />
                             <div
-                              style={{
-                                width: `${Math.min(100, deck.winRate)}%`,
-                              }}
+                              style={{ width: `${Math.min(100, deck.winRate)}%` }}
                               className={`h-full rounded-full transition-all duration-500 ${
                                 deck.winRate >= 25
                                   ? 'bg-gradient-to-r from-emerald-500 to-teal-400'
@@ -2871,289 +2684,271 @@ export default function App() {
         {/* ================================================================== */}
         {/* INTERACTIVE DECK ROSTER GRID (DASHBOARD & MY DECKS TAB)            */}
         {/* ================================================================== */}
-        {(activeTab === 'dashboard' || activeTab === 'decks') &&
-          decks.length > 0 && (
-            <section className="space-y-4">
-              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-                <div>
-                  <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                    Commander Roster
-                    <span className="text-xs font-normal text-slate-400">
-                      ({displayedDecks.length} of {decks.length} shown)
-                    </span>
-                  </h2>
-                  <p className="text-xs text-slate-400">
-                    Sorted by{' '}
-                    <span className="text-amber-300 font-medium">
-                      {sortBy === 'least_played' &&
-                        'Least Played (Pick your next game!)'}
-                      {sortBy === 'most_played' && 'Most Played'}
-                      {sortBy === 'win_rate' && 'Highest Win Rate'}
-                      {sortBy === 'last_played' && 'Most Recently Played'}
-                      {sortBy === 'alpha' && 'Alphabetical'}
-                    </span>
-                  </p>
-                </div>
+        {(activeTab === 'dashboard' || activeTab === 'decks') && decks.length > 0 && (
+          <section className="space-y-4">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                  Commander Roster
+                  <span className="text-xs font-normal text-slate-400">
+                    ({displayedDecks.length} of {decks.length} shown)
+                  </span>
+                </h2>
+                <p className="text-xs text-slate-400">
+                  Sorted by{' '}
+                  <span className="text-amber-300 font-medium">
+                    {sortBy === 'least_played' && 'Least Played (Pick your next game!)'}
+                    {sortBy === 'most_played' && 'Most Played'}
+                    {sortBy === 'win_rate' && 'Highest Win Rate'}
+                    {sortBy === 'last_played' && 'Most Recently Played'}
+                    {sortBy === 'alpha' && 'Alphabetical'}
+                  </span>
+                </p>
+              </div>
 
-                <div className="flex flex-wrap items-center gap-2">
-                  {/* Bracket Filter Pills */}
-                  <div className="flex items-center gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800">
+              <div className="flex flex-wrap items-center gap-2">
+                {/* Bracket Filter Pills */}
+                <div className="flex items-center gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800">
+                  <button
+                    type="button"
+                    onClick={() => setBracketFilter('all')}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-colors ${
+                      bracketFilter === 'all'
+                        ? 'bg-amber-500 text-slate-950'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    All
+                  </button>
+                  {[1, 2, 3, 4, 5].map((b) => (
                     <button
+                      key={b}
                       type="button"
-                      onClick={() => setBracketFilter('all')}
-                      className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-colors ${
-                        bracketFilter === 'all'
+                      onClick={() => setBracketFilter(bracketFilter === String(b) ? 'all' : String(b))}
+                      className={`px-2 py-1 rounded-lg text-[11px] font-bold transition-colors ${
+                        bracketFilter === String(b)
                           ? 'bg-amber-500 text-slate-950'
                           : 'text-slate-400 hover:text-white'
                       }`}
                     >
-                      All
+                      B{b}
                     </button>
-                    {[1, 2, 3, 4, 5].map((b) => (
-                      <button
-                        key={b}
-                        type="button"
-                        onClick={() =>
-                          setBracketFilter(
-                            bracketFilter === String(b) ? 'all' : String(b)
-                          )
-                        }
-                        className={`px-2 py-1 rounded-lg text-[11px] font-bold transition-colors ${
-                          bracketFilter === String(b)
-                            ? 'bg-amber-500 text-slate-950'
-                            : 'text-slate-400 hover:text-white'
-                        }`}
-                      >
-                        B{b}
-                      </button>
-                    ))}
-                  </div>
+                  ))}
+                </div>
 
-                  <div className="relative flex-1 sm:flex-initial">
-                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Filter commander, archetype..."
-                      className="w-full sm:w-48 pl-8 pr-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500/60"
-                    />
-                  </div>
+                <div className="relative flex-1 sm:flex-initial">
+                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Filter commander, archetype..."
+                    className="w-full sm:w-48 pl-8 pr-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500/60"
+                  />
+                </div>
 
-                  <div className="relative flex items-center">
-                    <ArrowUpDown className="w-3.5 h-3.5 text-slate-400 absolute left-3 pointer-events-none" />
-                    <select
-                      value={sortBy}
-                      onChange={(e) => setSortBy(e.target.value)}
-                      className="pl-8 pr-7 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs font-medium text-slate-200 focus:outline-none focus:border-amber-500/60 cursor-pointer"
-                    >
-                      <option value="least_played">
-                        Sort: Least Played First
-                      </option>
-                      <option value="most_played">
-                        Sort: Most Played First
-                      </option>
-                      <option value="win_rate">Sort: Highest Win Rate</option>
-                      <option value="last_played">Sort: Recently Played</option>
-                      <option value="alpha">Sort: A – Z</option>
-                    </select>
-                  </div>
+                <div className="relative flex items-center">
+                  <ArrowUpDown className="w-3.5 h-3.5 text-slate-400 absolute left-3 pointer-events-none" />
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    className="pl-8 pr-7 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs font-medium text-slate-200 focus:outline-none focus:border-amber-500/60 cursor-pointer"
+                  >
+                    <option value="least_played">Sort: Least Played First</option>
+                    <option value="most_played">Sort: Most Played First</option>
+                    <option value="win_rate">Sort: Highest Win Rate</option>
+                    <option value="last_played">Sort: Recently Played</option>
+                    <option value="alpha">Sort: A – Z</option>
+                  </select>
                 </div>
               </div>
+            </div>
 
-              {/* Interactive Deck Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                {displayedDecks.map((deck) => (
-                  <div
-                    key={deck.id}
-                    onClick={() => openDeckDrawer(deck)}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        openDeckDrawer(deck);
-                      }
-                    }}
-                    className="group rounded-2xl bg-slate-900/95 border border-slate-800 hover:border-amber-500/50 hover:bg-slate-900 p-5 flex flex-col justify-between transition-all shadow-lg shadow-black/20 cursor-pointer text-left"
-                  >
-                    <div>
-                      {/* Top Row: Mana Pips + Bracket Badge + Moxfield/Edit */}
-                      <div className="flex items-center justify-between gap-2 mb-3">
-                        <div className="flex items-center gap-1.5 min-w-0">
-                          {deck.colors.map((c) => (
-                            <ManaPip key={c} color={c} size="md" />
-                          ))}
-                          <span
-                            className={`ml-1 px-1.5 py-0.5 rounded text-[10px] font-bold border shrink-0 ${
-                              COMMANDER_BRACKETS[deck.bracket || 3]?.badge
-                            }`}
+            {/* Interactive Deck Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {displayedDecks.map((deck) => (
+                <div
+                  key={deck.id}
+                  onClick={() => openDeckDrawer(deck)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      openDeckDrawer(deck);
+                    }
+                  }}
+                  className="group rounded-2xl bg-slate-900/95 border border-slate-800 hover:border-amber-500/50 hover:bg-slate-900 p-5 flex flex-col justify-between transition-all shadow-lg shadow-black/20 cursor-pointer text-left"
+                >
+                  <div>
+                    {/* Top Row: Mana Pips + Bracket Badge + Moxfield/Edit */}
+                    <div className="flex items-center justify-between gap-2 mb-3">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        {deck.colors.map((c) => (
+                          <ManaPip key={c} color={c} size="md" />
+                        ))}
+                        <span
+                          className={`ml-1 px-1.5 py-0.5 rounded text-[10px] font-bold border shrink-0 ${
+                            COMMANDER_BRACKETS[deck.bracket || 3]?.badge
+                          }`}
+                        >
+                          B{deck.bracket || 3}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-1 shrink-0">
+                        {deck.moxfieldUrl ? (
+                          <a
+                            href={deck.moxfieldUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            title={`Open Your ${getDeckSiteName(deck.moxfieldUrl)} Decklist`}
+                            className="px-2 py-1 rounded-lg bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 border border-indigo-500/30 text-[11px] font-semibold flex items-center gap-1 transition-colors"
                           >
-                            B{deck.bracket || 3}
-                          </span>
-                        </div>
-
-                        <div className="flex items-center gap-1 shrink-0">
-                          {deck.moxfieldUrl ? (
-                            <a
-                              href={deck.moxfieldUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              onClick={(e) => e.stopPropagation()}
-                              title="Open Your Moxfield Decklist"
-                              className="px-2 py-1 rounded-lg bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 border border-indigo-500/30 text-[11px] font-semibold flex items-center gap-1 transition-colors"
-                            >
-                              <span>Moxfield</span>
-                              <ExternalLink className="w-3 h-3" />
-                            </a>
-                          ) : (
-                            <button
-                              onClick={(e) => openEditDeckModal(deck, e)}
-                              title="Attach your Moxfield decklist URL"
-                              className="px-2 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-700/70 text-[11px] font-medium transition-colors"
-                            >
-                              + Moxfield
-                            </button>
-                          )}
-
+                            <span>{getDeckSiteName(deck.moxfieldUrl)}</span>
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                        ) : (
                           <button
                             onClick={(e) => openEditDeckModal(deck, e)}
-                            title="Edit Deck Details"
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                            title="Attach your Moxfield or Archidekt decklist URL"
+                            className="px-2 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-700/70 text-[11px] font-medium transition-colors"
                           >
-                            <Edit3 className="w-3.5 h-3.5" />
+                            + Deck URL
                           </button>
-                        </div>
-                      </div>
-
-                      {/* Commander Name & Archetype */}
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <h3 className="text-base font-bold text-white group-hover:text-amber-300 transition-colors leading-snug">
-                            {deck.name}
-                          </h3>
-                          {deck.archetype && (
-                            <p className="text-xs text-slate-400 mt-0.5 mb-2 truncate">
-                              {deck.archetype}
-                            </p>
-                          )}
-                        </div>
-                        <ChevronRight className="w-4 h-4 text-slate-600 group-hover:text-amber-400 group-hover:translate-x-0.5 transition-all shrink-0 mt-1" />
-                      </div>
-
-                      {/* Decklist & Award Highlights */}
-                      <div className="flex flex-wrap items-center gap-1.5 mb-3 mt-1">
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-950 border border-slate-800 text-[11px] text-slate-300">
-                          <FileText className="w-3 h-3 text-slate-400" />
-                          {deck.totalCardCount > 0
-                            ? `${deck.totalCardCount} cards`
-                            : 'Add decklist'}
-                        </span>
-
-                        {deck.topMvpCards[0] && (
-                          <span
-                            title={`Top MVP: ${deck.topMvpCards[0].name} (${deck.topMvpCards[0].count}x)`}
-                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/25 text-[11px] text-amber-300 max-w-[165px] truncate"
-                          >
-                            <Star className="w-3 h-3 shrink-0" />
-                            <span className="truncate">
-                              {deck.topMvpCards[0].name}
-                            </span>
-                          </span>
                         )}
 
-                        {deck.topFunCards[0] && (
-                          <span
-                            title={`Most Fun: ${deck.topFunCards[0].name} (${deck.topFunCards[0].count}x)`}
-                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-pink-500/10 border border-pink-500/25 text-[11px] text-pink-300 max-w-[165px] truncate"
-                          >
-                            <Smile className="w-3 h-3 shrink-0" />
-                            <span className="truncate">
-                              {deck.topFunCards[0].name}
-                            </span>
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Stats Grid */}
-                      <div className="grid grid-cols-3 gap-2 p-2.5 rounded-xl bg-slate-950/80 border border-slate-800/80 mb-3">
-                        <div>
-                          <div className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
-                            Record
-                          </div>
-                          <div className="text-sm font-bold text-slate-100 mt-0.5">
-                            {deck.wins}W–{deck.losses}L
-                          </div>
-                        </div>
-                        <div>
-                          <div className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
-                            Win Rate
-                          </div>
-                          <div
-                            className={`text-sm font-bold mt-0.5 ${
-                              deck.games === 0
-                                ? 'text-slate-500'
-                                : deck.winRate >= 25
-                                ? 'text-emerald-400'
-                                : 'text-amber-300'
-                            }`}
-                          >
-                            {deck.games > 0 ? `${deck.winRate}%` : '—'}
-                          </div>
-                        </div>
-                        <div>
-                          <div className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
-                            Play Share
-                          </div>
-                          <div className="text-sm font-bold text-indigo-300 mt-0.5">
-                            {deck.playShare}%
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Meta Footer */}
-                      <div className="flex items-center justify-between text-[11px] text-slate-400 mb-3">
-                        <span>
-                          {deck.lastPlayed
-                            ? `Last played: ${deck.lastPlayed}`
-                            : 'Never played yet'}
-                        </span>
-                        {deck.streak >= 2 && (
-                          <span
-                            className={`px-1.5 py-0.5 rounded font-bold ${
-                              deck.streakType === 'win'
-                                ? 'bg-emerald-500/15 text-emerald-300'
-                                : 'bg-rose-500/15 text-rose-300'
-                            }`}
-                          >
-                            {deck.streak}
-                            {deck.streakType === 'win' ? 'W' : 'L'} Streak
-                          </span>
-                        )}
+                        <button
+                          onClick={(e) => openEditDeckModal(deck, e)}
+                          title="Edit Deck Details"
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     </div>
 
-                    {/* Quick One-Tap Log Buttons */}
-                    <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800/80">
-                      <button
-                        onClick={(e) => handleQuickLog(deck.id, 'win', e)}
-                        className="py-2 px-3 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 active:scale-[0.98] text-emerald-300 border border-emerald-500/30 font-bold text-xs flex items-center justify-center gap-1.5 transition-all"
-                      >
-                        <Trophy className="w-3.5 h-3.5" />
-                        <span>+ Win</span>
-                      </button>
-                      <button
-                        onClick={(e) => handleQuickLog(deck.id, 'loss', e)}
-                        className="py-2 px-3 rounded-xl bg-slate-800/90 hover:bg-slate-700 active:scale-[0.98] text-slate-200 border border-slate-700 font-semibold text-xs flex items-center justify-center gap-1.5 transition-all"
-                      >
-                        <span>+ Loss</span>
-                      </button>
+                    {/* Commander Name & Archetype */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <h3 className="text-base font-bold text-white group-hover:text-amber-300 transition-colors leading-snug">
+                          {deck.name}
+                        </h3>
+                        {deck.archetype && (
+                          <p className="text-xs text-slate-400 mt-0.5 mb-2 truncate">
+                            {deck.archetype}
+                          </p>
+                        )}
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-slate-600 group-hover:text-amber-400 group-hover:translate-x-0.5 transition-all shrink-0 mt-1" />
+                    </div>
+
+                    {/* Decklist & Award Highlights */}
+                    <div className="flex flex-wrap items-center gap-1.5 mb-3 mt-1">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-950 border border-slate-800 text-[11px] text-slate-300">
+                        <FileText className="w-3 h-3 text-slate-400" />
+                        {deck.totalCardCount > 0 ? `${deck.totalCardCount} cards` : 'Add decklist'}
+                      </span>
+
+                      {deck.topMvpCards[0] && (
+                        <span
+                          title={`Top MVP: ${deck.topMvpCards[0].name} (${deck.topMvpCards[0].count}x)`}
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/25 text-[11px] text-amber-300 max-w-[165px] truncate"
+                        >
+                          <Star className="w-3 h-3 shrink-0" />
+                          <span className="truncate">{deck.topMvpCards[0].name}</span>
+                        </span>
+                      )}
+
+                      {deck.topFunCards[0] && (
+                        <span
+                          title={`Most Fun: ${deck.topFunCards[0].name} (${deck.topFunCards[0].count}x)`}
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-pink-500/10 border border-pink-500/25 text-[11px] text-pink-300 max-w-[165px] truncate"
+                        >
+                          <Smile className="w-3 h-3 shrink-0" />
+                          <span className="truncate">{deck.topFunCards[0].name}</span>
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Stats Grid */}
+                    <div className="grid grid-cols-3 gap-2 p-2.5 rounded-xl bg-slate-950/80 border border-slate-800/80 mb-3">
+                      <div>
+                        <div className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
+                          Record
+                        </div>
+                        <div className="text-sm font-bold text-slate-100 mt-0.5">
+                          {deck.wins}W–{deck.losses}L
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
+                          Win Rate
+                        </div>
+                        <div
+                          className={`text-sm font-bold mt-0.5 ${
+                            deck.games === 0
+                              ? 'text-slate-500'
+                              : deck.winRate >= 25
+                              ? 'text-emerald-400'
+                              : 'text-amber-300'
+                          }`}
+                        >
+                          {deck.games > 0 ? `${deck.winRate}%` : '—'}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
+                          Play Share
+                        </div>
+                        <div className="text-sm font-bold text-indigo-300 mt-0.5">
+                          {deck.playShare}%
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Meta Footer */}
+                    <div className="flex items-center justify-between text-[11px] text-slate-400 mb-3">
+                      <span>
+                        {deck.lastPlayed ? `Last played: ${deck.lastPlayed}` : 'Never played yet'}
+                      </span>
+                      {deck.streak >= 2 && (
+                        <span
+                          className={`px-1.5 py-0.5 rounded font-bold ${
+                            deck.streakType === 'win'
+                              ? 'bg-emerald-500/15 text-emerald-300'
+                              : 'bg-rose-500/15 text-rose-300'
+                          }`}
+                        >
+                          {deck.streak}
+                          {deck.streakType === 'win' ? 'W' : 'L'} Streak
+                        </span>
+                      )}
                     </div>
                   </div>
-                ))}
-              </div>
-            </section>
-          )}
+
+                  {/* Quick One-Tap Log Buttons */}
+                  <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800/80">
+                    <button
+                      onClick={(e) => handleQuickLog(deck.id, 'win', e)}
+                      className="py-2 px-3 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 active:scale-[0.98] text-emerald-300 border border-emerald-500/30 font-bold text-xs flex items-center justify-center gap-1.5 transition-all"
+                    >
+                      <Trophy className="w-3.5 h-3.5" />
+                      <span>+ Win</span>
+                    </button>
+                    <button
+                      onClick={(e) => handleQuickLog(deck.id, 'loss', e)}
+                      className="py-2 px-3 rounded-xl bg-slate-800/90 hover:bg-slate-700 active:scale-[0.98] text-slate-200 border border-slate-700 font-semibold text-xs flex items-center justify-center gap-1.5 transition-all"
+                    >
+                      <span>+ Loss</span>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* ================================================================== */}
         {/* MATCH HISTORY TAB                                                  */}
@@ -3162,9 +2957,7 @@ export default function App() {
           <section className="rounded-2xl bg-slate-900/90 border border-slate-800 p-5 sm:p-6 space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
-                <h2 className="text-lg font-bold text-white">
-                  Complete Match Log
-                </h2>
+                <h2 className="text-lg font-bold text-white">Complete Match Log</h2>
                 <p className="text-xs text-slate-400">
                   {matches.length} total games recorded across your pods
                 </p>
@@ -3183,9 +2976,7 @@ export default function App() {
             {matches.length === 0 ? (
               <div className="py-12 text-center border border-dashed border-slate-800 rounded-2xl">
                 <Trophy className="w-10 h-10 text-slate-600 mx-auto mb-2" />
-                <p className="text-sm font-semibold text-slate-300">
-                  No games logged yet
-                </p>
+                <p className="text-sm font-semibold text-slate-300">No games logged yet</p>
                 <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
                   {decks.length === 0
                     ? 'Add a commander deck first, then log your match wins and losses here.'
@@ -3245,9 +3036,7 @@ export default function App() {
                               {match.podSize || 4}-Player Pod
                             </span>
                             {match.notes && (
-                              <span className="text-slate-300 italic">
-                                "{match.notes}"
-                              </span>
+                              <span className="text-slate-300 italic">"{match.notes}"</span>
                             )}
                           </div>
 
@@ -3321,9 +3110,7 @@ export default function App() {
                 onChange={setQuickMvpCard}
                 deckCards={
                   decks.find(
-                    (d) =>
-                      d.id ===
-                      matches.find((m) => m.id === quickAwardMatchId)?.deckId
+                    (d) => d.id === matches.find((m) => m.id === quickAwardMatchId)?.deckId
                   )?.decklist || []
                 }
               />
@@ -3336,9 +3123,7 @@ export default function App() {
                 onChange={setQuickFunCard}
                 deckCards={
                   decks.find(
-                    (d) =>
-                      d.id ===
-                      matches.find((m) => m.id === quickAwardMatchId)?.deckId
+                    (d) => d.id === matches.find((m) => m.id === quickAwardMatchId)?.deckId
                   )?.decklist || []
                 }
               />
@@ -3391,9 +3176,7 @@ export default function App() {
                 </div>
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-400 mt-1">
                   {selectedDeck.archetype && (
-                    <span className="text-indigo-300 font-semibold">
-                      {selectedDeck.archetype}
-                    </span>
+                    <span className="text-indigo-300 font-semibold">{selectedDeck.archetype}</span>
                   )}
                   <span>
                     Record:{' '}
@@ -3404,17 +3187,11 @@ export default function App() {
                   </span>
                   <span>•</span>
                   <span>
-                    Play Share:{' '}
-                    <strong className="text-indigo-300">
-                      {selectedDeckStats.playShare}%
-                    </strong>
+                    Play Share: <strong className="text-indigo-300">{selectedDeckStats.playShare}%</strong>
                   </span>
                   <span>•</span>
                   <span>
-                    Decklist:{' '}
-                    <strong className="text-amber-300">
-                      {selectedDeckStats.totalCardCount} cards
-                    </strong>
+                    Decklist: <strong className="text-amber-300">{selectedDeckStats.totalCardCount} cards</strong>
                   </span>
                 </div>
               </div>
@@ -3436,24 +3213,20 @@ export default function App() {
               </div>
             </div>
 
-            {/* Moxfield Sync & Auto-Check Control Bar */}
+            {/* Moxfield / Archidekt Sync & Auto-Check Control Bar */}
             <div className="px-5 py-3 bg-slate-950/50 border-b border-slate-800/80 flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2 flex-wrap">
                 <button
                   type="button"
                   disabled={isSyncingMoxfield}
-                  onClick={() => syncDeckFromMoxfield(selectedDeck, false)}
+                  onClick={() => syncDeckFromUrl(selectedDeck, false)}
                   className="px-3 py-1.5 rounded-xl bg-indigo-500/20 hover:bg-indigo-500/30 disabled:opacity-50 text-indigo-200 border border-indigo-500/40 text-xs font-bold flex items-center gap-1.5 transition-colors"
                 >
-                  <RefreshCw
-                    className={`w-3.5 h-3.5 ${
-                      isSyncingMoxfield ? 'animate-spin' : ''
-                    }`}
-                  />
+                  <RefreshCw className={`w-3.5 h-3.5 ${isSyncingMoxfield ? 'animate-spin' : ''}`} />
                   <span>
                     {isSyncingMoxfield
-                      ? 'Checking Moxfield...'
-                      : 'Sync Moxfield'}
+                      ? `Checking ${getDeckSiteName(selectedDeck.moxfieldUrl)}...`
+                      : `Sync ${getDeckSiteName(selectedDeck.moxfieldUrl)}`}
                   </span>
                 </button>
 
@@ -3464,7 +3237,7 @@ export default function App() {
                     rel="noopener noreferrer"
                     className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1.5"
                   >
-                    <span>Open Moxfield</span>
+                    <span>Open {getDeckSiteName(selectedDeck.moxfieldUrl)}</span>
                     <ExternalLink className="w-3.5 h-3.5" />
                   </a>
                 ) : (
@@ -3473,7 +3246,7 @@ export default function App() {
                     onClick={() => openEditDeckModal(selectedDeck)}
                     className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 text-xs font-semibold"
                   >
-                    + Link Moxfield URL
+                    + Link Moxfield / Archidekt URL
                   </button>
                 )}
               </div>
@@ -3485,7 +3258,7 @@ export default function App() {
                   onChange={() => toggleDeckAutoSync(selectedDeck.id)}
                   className="rounded border-slate-600 bg-slate-900 text-amber-500 focus:ring-amber-500"
                 />
-                <span>Auto-check Moxfield on load</span>
+                <span>Auto-check on load</span>
               </label>
             </div>
 
@@ -3511,20 +3284,18 @@ export default function App() {
                 {
                   id: 'decklist',
                   label: `Decklist (${selectedDeckStats.totalCardCount})`,
-                  icon: FileText,
+                  icon: FileText
                 },
                 {
                   id: 'awards',
                   label: 'Card Hall of Fame & Cuts',
-                  icon: Star,
+                  icon: Star
                 },
                 {
                   id: 'history',
-                  label: `Matches & Changelog (${
-                    selectedDeck.revisions?.length || 0
-                  })`,
-                  icon: GitCommit,
-                },
+                  label: `Matches & Changelog (${selectedDeck.revisions?.length || 0})`,
+                  icon: GitCommit
+                }
               ].map((t) => {
                 const Icon = t.icon;
                 const active = drawerTab === t.id;
@@ -3557,9 +3328,7 @@ export default function App() {
                           Paste or Edit Decklist (MTGO / Moxfield Text Format)
                         </label>
                         <span className="text-xs text-slate-400">
-                          Format:{' '}
-                          <code className="text-amber-300">1 Sol Ring</code> (1
-                          card per line)
+                          Format: <code className="text-amber-300">1 Sol Ring</code> (1 card per line)
                         </span>
                       </div>
 
@@ -3612,9 +3381,7 @@ export default function App() {
                             <input
                               type="text"
                               value={decklistSearch}
-                              onChange={(e) =>
-                                setDecklistSearch(e.target.value)
-                              }
+                              onChange={(e) => setDecklistSearch(e.target.value)}
                               placeholder="Search cards in deck..."
                               className="w-full pl-8 pr-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
                             />
@@ -3633,9 +3400,7 @@ export default function App() {
                             <button
                               type="button"
                               onClick={() => {
-                                setDecklistDraft(
-                                  serializeDecklist(selectedDeck.decklist || [])
-                                );
+                                setDecklistDraft(serializeDecklist(selectedDeck.decklist || []));
                                 setRevisionNote('');
                                 setIsEditingList(true);
                               }}
@@ -3658,43 +3423,31 @@ export default function App() {
                               No decklist stored for {selectedDeck.name} yet
                             </p>
                             <p className="text-xs text-slate-500 max-w-md mx-auto">
-                              Click <strong>Paste Decklist</strong> to paste
-                              your Moxfield export, or link your Moxfield URL
-                              above and click <strong>Sync Moxfield</strong>.
+                              Click <strong>Paste from Clipboard</strong> to paste your Moxfield/Archidekt export, or link your Moxfield or Archidekt URL above and click <strong>Sync</strong>.
                             </p>
                           </div>
                         ) : (
                           <div className="rounded-xl bg-slate-950/80 border border-slate-800 divide-y divide-slate-800/60 max-h-[460px] overflow-y-auto">
                             {(selectedDeck.decklist || [])
                               .filter((c) =>
-                                c.name
-                                  .toLowerCase()
-                                  .includes(decklistSearch.toLowerCase())
+                                c.name.toLowerCase().includes(decklistSearch.toLowerCase())
                               )
                               .map((card) => {
                                 const mvpCount =
                                   selectedDeckStats.topMvpCards.find(
-                                    (m) =>
-                                      m.name.toLowerCase() ===
-                                      card.name.toLowerCase()
+                                    (m) => m.name.toLowerCase() === card.name.toLowerCase()
                                   )?.count || 0;
                                 const funCount =
                                   selectedDeckStats.topFunCards.find(
-                                    (f) =>
-                                      f.name.toLowerCase() ===
-                                      card.name.toLowerCase()
+                                    (f) => f.name.toLowerCase() === card.name.toLowerCase()
                                   )?.count || 0;
 
                                 return (
                                   <button
                                     key={card.name}
                                     type="button"
-                                    onMouseEnter={() =>
-                                      setPreviewCardName(card.name)
-                                    }
-                                    onClick={() =>
-                                      setPreviewCardName(card.name)
-                                    }
+                                    onMouseEnter={() => setPreviewCardName(card.name)}
+                                    onClick={() => setPreviewCardName(card.name)}
                                     className={`w-full px-3.5 py-2 text-left text-xs flex items-center justify-between gap-2 transition-colors ${
                                       previewCardName === card.name
                                         ? 'bg-amber-500/15 text-amber-200'
@@ -3705,9 +3458,7 @@ export default function App() {
                                       <span className="font-mono text-slate-500 w-5 shrink-0">
                                         {card.qty}×
                                       </span>
-                                      <span className="font-medium truncate">
-                                        {card.name}
-                                      </span>
+                                      <span className="font-medium truncate">{card.name}</span>
                                     </div>
 
                                     <div className="flex items-center gap-1.5 shrink-0">
@@ -3775,9 +3526,7 @@ export default function App() {
                                     {card.name}
                                   </div>
                                   <div className="text-[11px] text-slate-400">
-                                    {card.wins}{' '}
-                                    {card.wins === 1 ? 'win' : 'wins'} when
-                                    named MVP
+                                    {card.wins} {card.wins === 1 ? 'win' : 'wins'} when named MVP
                                   </div>
                                 </div>
                               </div>
@@ -3794,9 +3543,7 @@ export default function App() {
                     <div className="rounded-2xl bg-slate-950/60 border border-pink-500/25 p-4 space-y-3">
                       <div className="flex items-center gap-2">
                         <Smile className="w-4 h-4 text-pink-400" />
-                        <h3 className="text-sm font-bold text-white">
-                          Most Fun Card Winners
-                        </h3>
+                        <h3 className="text-sm font-bold text-white">Most Fun Card Winners</h3>
                       </div>
 
                       {selectedDeckStats.topFunCards.length === 0 ? (
@@ -3848,29 +3595,26 @@ export default function App() {
                       </div>
                       <span className="text-[11px] text-slate-400">
                         {selectedDeckStats.allStarCards.length} All-Stars •{' '}
-                        {selectedDeckStats.cutCandidates.length} Un-nominated
-                        Non-Basic Cards
+                        {selectedDeckStats.cutCandidates.length} Un-nominated Non-Basic Cards
                       </span>
                     </div>
 
                     {(selectedDeck.decklist || []).length === 0 ? (
                       <p className="text-xs text-slate-400 py-3">
-                        Paste or sync your 100-card decklist in the{' '}
-                        <strong>Decklist & Sync</strong> tab to unlock automated
-                        Cut Candidate detection!
+                        Paste or sync your 100-card decklist in the <strong>Decklist & Sync</strong>{' '}
+                        tab to unlock automated Cut Candidate detection!
                       </p>
                     ) : selectedDeckStats.cutCandidates.length === 0 ? (
                       <p className="text-xs text-emerald-400 py-2">
-                        Every non-basic card in your decklist has earned at
-                        least one MVP or Fun Card nomination!
+                        Every non-basic card in your decklist has earned at least one MVP or Fun Card
+                        nomination!
                       </p>
                     ) : (
                       <div className="space-y-2">
                         <p className="text-xs text-slate-400">
                           Non-basic cards in your stored list that have{' '}
-                          <strong className="text-slate-200">never</strong> been
-                          nominated as MVP or Most Fun (click any card to
-                          preview before cutting):
+                          <strong className="text-slate-200">never</strong> been nominated as MVP or
+                          Most Fun (click any card to preview before cutting):
                         </p>
                         <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto pt-1">
                           {selectedDeckStats.cutCandidates.map((cardName) => (
@@ -3907,8 +3651,8 @@ export default function App() {
                           </h3>
                         </div>
                         <span className="text-[11px] text-indigo-300 font-medium">
-                          Patch: "{selectedDeckStats.patchImpact.revision.note}"
-                          ({selectedDeckStats.patchImpact.revision.date})
+                          Patch: "{selectedDeckStats.patchImpact.revision.note}" (
+                          {selectedDeckStats.patchImpact.revision.date})
                         </span>
                       </div>
 
@@ -3963,9 +3707,7 @@ export default function App() {
                                 <TrendingDown className="w-4 h-4" />
                               )}
                               <span>
-                                {selectedDeckStats.patchImpact.delta > 0
-                                  ? '+'
-                                  : ''}
+                                {selectedDeckStats.patchImpact.delta > 0 ? '+' : ''}
                                 {selectedDeckStats.patchImpact.delta}%
                               </span>
                             </div>
@@ -3984,9 +3726,7 @@ export default function App() {
                     <div className="space-y-3">
                       <h3 className="text-sm font-bold text-white flex items-center gap-2">
                         <Trophy className="w-4 h-4 text-emerald-400" />
-                        <span>
-                          Recorded Matches ({selectedDeckStats.games})
-                        </span>
+                        <span>Recorded Matches ({selectedDeckStats.games})</span>
                       </h3>
 
                       {selectedDeckStats.games === 0 ? (
@@ -4032,11 +3772,7 @@ export default function App() {
                                   </div>
                                 )}
 
-                                {m.notes && (
-                                  <p className="text-slate-300 italic">
-                                    "{m.notes}"
-                                  </p>
-                                )}
+                                {m.notes && <p className="text-slate-300 italic">"{m.notes}"</p>}
                               </div>
                             ))}
                         </div>
@@ -4047,16 +3783,12 @@ export default function App() {
                     <div className="space-y-3">
                       <h3 className="text-sm font-bold text-white flex items-center gap-2">
                         <GitCommit className="w-4 h-4 text-amber-400" />
-                        <span>
-                          Decklist Revision History (
-                          {selectedDeck.revisions?.length || 0})
-                        </span>
+                        <span>Decklist Revision History ({selectedDeck.revisions?.length || 0})</span>
                       </h3>
 
                       {(selectedDeck.revisions || []).length === 0 ? (
                         <p className="text-xs text-slate-500 p-4 rounded-xl bg-slate-950/50 border border-slate-800">
-                          Every time you edit or sync your decklist, a changelog
-                          of cards added and cut appears here.
+                          Every time you edit or sync your decklist, a changelog of cards added and cut appears here.
                         </p>
                       ) : (
                         <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
@@ -4066,12 +3798,8 @@ export default function App() {
                               className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800 text-xs space-y-2"
                             >
                               <div className="flex items-center justify-between">
-                                <span className="font-bold text-slate-200">
-                                  {rev.note}
-                                </span>
-                                <span className="text-slate-500">
-                                  {rev.date}
-                                </span>
+                                <span className="font-bold text-slate-200">{rev.note}</span>
+                                <span className="text-slate-500">{rev.date}</span>
                               </div>
 
                               {rev.added?.length > 0 && (
@@ -4141,9 +3869,7 @@ export default function App() {
             <div className="px-5 py-4 border-b border-slate-800 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Dices className="w-5 h-5 text-indigo-400" />
-                <h3 className="text-base font-bold text-white">
-                  Spin the Pod — Deck Picker
-                </h3>
+                <h3 className="text-base font-bold text-white">Spin the Pod — Deck Picker</h3>
               </div>
               <button
                 onClick={() => setIsSpinModalOpen(false)}
@@ -4168,9 +3894,7 @@ export default function App() {
                     }}
                     className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white focus:outline-none focus:border-indigo-500"
                   >
-                    <option value="all">
-                      All Brackets ({decks.length} decks)
-                    </option>
+                    <option value="all">All Brackets ({decks.length} decks)</option>
                     {[1, 2, 3, 4, 5].map((b) => (
                       <option key={b} value={String(b)}>
                         {COMMANDER_BRACKETS[b].short}
@@ -4190,9 +3914,7 @@ export default function App() {
                       }}
                       className="rounded border-slate-600 bg-slate-900 text-indigo-500 focus:ring-indigo-500"
                     />
-                    <span className="text-xs text-slate-300">
-                      Skip decks played today
-                    </span>
+                    <span className="text-xs text-slate-300">Skip decks played today</span>
                   </label>
                 </div>
               </div>
@@ -4201,8 +3923,7 @@ export default function App() {
               <div className="rounded-2xl bg-slate-950/90 border border-indigo-500/30 p-5 text-center min-h-[160px] flex flex-col items-center justify-center">
                 {spinCandidateDecks.length === 0 ? (
                   <p className="text-xs text-amber-300">
-                    No decks match these filters. Try switching Bracket Pool to
-                    "All Brackets" or unchecking "Skip decks played today".
+                    No decks match these filters. Try switching Bracket Pool to "All Brackets" or unchecking "Skip decks played today".
                   </p>
                 ) : spinSelectedDeck ? (
                   <div className="space-y-2.5 w-full">
@@ -4212,14 +3933,10 @@ export default function App() {
                       ))}
                       <span
                         className={`ml-1 px-2 py-0.5 rounded text-[10px] font-bold border ${
-                          COMMANDER_BRACKETS[spinSelectedDeck.bracket || 3]
-                            ?.badge
+                          COMMANDER_BRACKETS[spinSelectedDeck.bracket || 3]?.badge
                         }`}
                       >
-                        {
-                          COMMANDER_BRACKETS[spinSelectedDeck.bracket || 3]
-                            ?.short
-                        }
+                        {COMMANDER_BRACKETS[spinSelectedDeck.bracket || 3]?.short}
                       </span>
                     </div>
 
@@ -4234,13 +3951,9 @@ export default function App() {
                     )}
 
                     <div className="text-[11px] text-slate-400">
-                      Played{' '}
-                      <strong className="text-white">
-                        {spinSelectedDeck.games}
-                      </strong>{' '}
-                      {spinSelectedDeck.games === 1 ? 'time' : 'times'} (
-                      {spinSelectedDeck.playShare}% share) • Selection odds:{' '}
-                      {spinSelectedDeck.oddsPercent}%
+                      Played <strong className="text-white">{spinSelectedDeck.games}</strong>{' '}
+                      {spinSelectedDeck.games === 1 ? 'time' : 'times'} ({spinSelectedDeck.playShare}%
+                      share) • Selection odds: {spinSelectedDeck.oddsPercent}%
                     </div>
 
                     {!isSpinning && (
@@ -4272,8 +3985,7 @@ export default function App() {
                   <div className="space-y-1">
                     <p className="text-sm font-bold text-slate-200">
                       {spinCandidateDecks.length} eligible{' '}
-                      {spinCandidateDecks.length === 1 ? 'deck' : 'decks'} in
-                      the pool
+                      {spinCandidateDecks.length === 1 ? 'deck' : 'decks'} in the pool
                     </p>
                     <p className="text-xs text-slate-400">
                       Underplayed decks receive higher odds automatically!
@@ -4300,9 +4012,7 @@ export default function App() {
                         >
                           <span className="text-slate-300 truncate pr-2">
                             {d.name}{' '}
-                            <span className="text-slate-500 text-[11px]">
-                              ({d.games}g)
-                            </span>
+                            <span className="text-slate-500 text-[11px]">({d.games}g)</span>
                           </span>
                           <span className="font-bold text-indigo-300 shrink-0">
                             {d.oddsPercent}%
@@ -4319,9 +4029,7 @@ export default function App() {
                 onClick={handleSpinDeck}
                 className="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 disabled:opacity-50 text-white font-extrabold text-sm shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2 transition-all active:scale-[0.99]"
               >
-                <Dices
-                  className={`w-4 h-4 ${isSpinning ? 'animate-spin' : ''}`}
-                />
+                <Dices className={`w-4 h-4 ${isSpinning ? 'animate-spin' : ''}`} />
                 <span>
                   {isSpinning
                     ? 'Rolling the Dice...'
@@ -4344,9 +4052,7 @@ export default function App() {
             <div className="px-5 py-4 border-b border-slate-800 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Trophy className="w-5 h-5 text-amber-400" />
-                <h3 className="text-base font-bold text-white">
-                  Log Commander Match
-                </h3>
+                <h3 className="text-base font-bold text-white">Log Commander Match</h3>
               </div>
               <button
                 onClick={() => setIsLogModalOpen(false)}
@@ -4417,9 +4123,7 @@ export default function App() {
                   placeholder="Type card name (searches deck & Scryfall)..."
                   value={logMvpCard}
                   onChange={setLogMvpCard}
-                  deckCards={
-                    decks.find((d) => d.id === logDeckId)?.decklist || []
-                  }
+                  deckCards={decks.find((d) => d.id === logDeckId)?.decklist || []}
                 />
 
                 <CardNominationInput
@@ -4429,9 +4133,7 @@ export default function App() {
                   placeholder="Type card name..."
                   value={logFunCard}
                   onChange={setLogFunCard}
-                  deckCards={
-                    decks.find((d) => d.id === logDeckId)?.decklist || []
-                  }
+                  deckCards={decks.find((d) => d.id === logDeckId)?.decklist || []}
                 />
               </div>
 
@@ -4511,9 +4213,7 @@ export default function App() {
               <div className="flex items-center gap-2">
                 <Layers className="w-5 h-5 text-amber-400" />
                 <h3 className="text-base font-bold text-white">
-                  {editingDeck
-                    ? 'Edit Commander Deck'
-                    : 'Add New Commander Deck'}
+                  {editingDeck ? 'Edit Commander Deck' : 'Add New Commander Deck'}
                 </h3>
               </div>
               <button
@@ -4527,11 +4227,7 @@ export default function App() {
             <form onSubmit={handleDeckSave} className="p-5 space-y-4">
               {/* Primary Commander with Scryfall Live Search */}
               <ScryfallCommanderInput
-                label={
-                  hasPartner
-                    ? 'Primary Commander (Scryfall Search)'
-                    : 'Commander Name (Scryfall Search)'
-                }
+                label={hasPartner ? 'Primary Commander (Scryfall Search)' : 'Commander Name (Scryfall Search)'}
                 placeholder="Search Scryfall (e.g., Urza, Atraxa, Tymna)..."
                 value={deckName}
                 onChange={setDeckName}
@@ -4594,9 +4290,7 @@ export default function App() {
                         }`}
                       >
                         <ManaPip color={c} size="md" />
-                        <span className="text-[10px] font-semibold text-slate-300">
-                          {c}
-                        </span>
+                        <span className="text-[10px] font-semibold text-slate-300">{c}</span>
                       </button>
                     );
                   })}
@@ -4638,13 +4332,13 @@ export default function App() {
 
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
-                  Moxfield Decklist URL (Auto-Imports Cards)
+                  Moxfield or Archidekt URL (Auto-Imports Cards)
                 </label>
                 <input
                   type="text"
                   value={deckMoxfield}
                   onChange={(e) => setDeckMoxfield(e.target.value)}
-                  placeholder="https://www.moxfield.com/decks/..."
+                  placeholder="https://archidekt.com/decks/... or https://moxfield.com/decks/..."
                   className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
                 />
               </div>
@@ -4653,7 +4347,7 @@ export default function App() {
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
                     <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                      Paste Decklist (Moxfield → Export → Copy for MTGO)
+                      Or Paste Decklist (MTGO / Text Export)
                     </label>
                     <button
                       type="button"
@@ -4669,15 +4363,10 @@ export default function App() {
                               )} cards from clipboard!`
                             );
                           } else {
-                            showToast(
-                              'Copy your decklist on Moxfield first!',
-                              'error'
-                            );
+                            showToast('Copy your decklist on Moxfield or Archidekt first!', 'error');
                           }
                         } catch {
-                          showToast(
-                            'Click inside the box below and press Cmd+V / Ctrl+V'
-                          );
+                          showToast('Click inside the box below and press Cmd+V / Ctrl+V');
                         }
                       }}
                       className="text-[11px] font-bold text-indigo-300 hover:text-indigo-200 flex items-center gap-1"
@@ -4726,9 +4415,7 @@ export default function App() {
                     disabled={isSavingDeck}
                     className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 disabled:opacity-50 text-slate-950 font-bold text-xs sm:text-sm shadow-lg shadow-amber-500/20 flex items-center gap-1.5"
                   >
-                    {isSavingDeck && (
-                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                    )}
+                    {isSavingDeck && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
                     <span>
                       {isSavingDeck
                         ? 'Importing...'
@@ -4753,9 +4440,7 @@ export default function App() {
             <div className="px-5 py-4 border-b border-slate-800 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Download className="w-5 h-5 text-amber-400" />
-                <h3 className="text-base font-bold text-white">
-                  Backup & Data Management
-                </h3>
+                <h3 className="text-base font-bold text-white">Backup & Data Management</h3>
               </div>
               <button
                 onClick={() => setIsBackupModalOpen(false)}
@@ -4767,9 +4452,7 @@ export default function App() {
 
             <div className="p-5 space-y-4">
               <p className="text-xs text-slate-400 leading-relaxed">
-                All decks, 100-card lists, changelogs, and match history are
-                tied privately to your account. Download a backup anytime for
-                safekeeping.
+                All decks, 100-card lists, changelogs, and match history are tied privately to your account. Download a backup anytime for safekeeping.
               </p>
 
               <div className="space-y-2.5">
@@ -4778,9 +4461,7 @@ export default function App() {
                   className="w-full py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-left flex items-center justify-between transition-colors"
                 >
                   <div>
-                    <div className="text-sm font-bold text-white">
-                      Download Full Backup (.JSON)
-                    </div>
+                    <div className="text-sm font-bold text-white">Download Full Backup (.JSON)</div>
                     <div className="text-xs text-slate-400">
                       Saves all decks, decklists, revisions & match logs
                     </div>
@@ -4793,9 +4474,7 @@ export default function App() {
                   className="w-full py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-left flex items-center justify-between transition-colors"
                 >
                   <div>
-                    <div className="text-sm font-bold text-white">
-                      Export Match Spreadsheet (.CSV)
-                    </div>
+                    <div className="text-sm font-bold text-white">Export Match Spreadsheet (.CSV)</div>
                     <div className="text-xs text-slate-400">
                       Includes MVP & Most Fun Card columns for Excel/Sheets
                     </div>
@@ -4808,9 +4487,7 @@ export default function App() {
                   className="w-full py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-left flex items-center justify-between transition-colors"
                 >
                   <div>
-                    <div className="text-sm font-bold text-white">
-                      Import from Backup (.JSON)
-                    </div>
+                    <div className="text-sm font-bold text-white">Import from Backup (.JSON)</div>
                     <div className="text-xs text-slate-400">
                       Load a previously saved backup file into your account
                     </div>
@@ -4837,9 +4514,7 @@ export default function App() {
                     type="button"
                     onClick={async () => {
                       try {
-                        await navigator.clipboard.writeText(
-                          VERCEL_MOXFIELD_PROXY_CODE
-                        );
+                        await navigator.clipboard.writeText(VERCEL_MOXFIELD_PROXY_CODE);
                         showToast('Copied api/moxfield.js code to clipboard!');
                       } catch {
                         showToast('Could not access clipboard', 'error');
@@ -4852,11 +4527,7 @@ export default function App() {
                   </button>
                 </div>
                 <p className="text-[11px] text-slate-300 leading-relaxed">
-                  Create a file named{' '}
-                  <code className="text-amber-300">api/moxfield.js</code> in the
-                  root folder of your StackBlitz/GitHub project and paste this
-                  code before deploying to Vercel so your app fetches Moxfield
-                  decks directly without Cloudflare blocks.
+                  Create a file named <code className="text-amber-300">api/moxfield.js</code> in the root folder of your StackBlitz/GitHub project and paste this code before deploying to Vercel so your app fetches Moxfield decks directly without Cloudflare blocks.
                 </p>
               </div>
 
@@ -4905,28 +4576,20 @@ export default function App() {
                     {accountLabel.slice(0, 2).toUpperCase()}
                   </div>
                   <div className="min-w-0">
-                    <div className="text-sm font-bold text-white truncate">
-                      {accountLabel}
-                    </div>
-                    <div className="text-xs text-slate-400 truncate">
-                      {user?.email}
-                    </div>
+                    <div className="text-sm font-bold text-white truncate">{accountLabel}</div>
+                    <div className="text-xs text-slate-400 truncate">{user?.email}</div>
                     <div className="inline-flex items-center gap-1 text-[11px] text-emerald-400 font-semibold mt-1">
                       <Cloud className="w-3 h-3" />
                       <span>
-                        Cloud Sync Active ({decks.length}{' '}
-                        {decks.length === 1 ? 'deck' : 'decks'} •{' '}
-                        {matches.length}{' '}
-                        {matches.length === 1 ? 'game' : 'games'})
+                        Cloud Sync Active ({decks.length} {decks.length === 1 ? 'deck' : 'decks'} •{' '}
+                        {matches.length} {matches.length === 1 ? 'game' : 'games'})
                       </span>
                     </div>
                   </div>
                 </div>
 
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  Your decks, 100-card lists, revisions, and match history are
-                  privately tied to your account. Sign in with this same email
-                  and password on any phone or computer to access your vault.
+                  Your decks, 100-card lists, revisions, and match history are privately tied to your account. Sign in with this same email and password on any phone or computer to access your vault.
                 </p>
 
                 <div className="pt-2 flex items-center justify-between gap-2">
@@ -5073,9 +4736,7 @@ export default function App() {
                 <AlertCircle className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-white">
-                  {confirmAction.title}
-                </h3>
+                <h3 className="text-base font-bold text-white">{confirmAction.title}</h3>
                 <p className="text-xs text-slate-400 mt-1 leading-relaxed">
                   {confirmAction.message}
                 </p>
