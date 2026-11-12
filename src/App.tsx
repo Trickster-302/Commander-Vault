@@ -326,22 +326,48 @@ async function fetchArchidektCardsByUrl(url) {
   const archId = extractArchidektId(url);
   if (!archId) return null;
 
+  // 1. Primary: Private Vercel Serverless Proxy (/api/moxfield?site=archidekt)
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 7000);
+    const response = await fetch(
+      `/api/moxfield?site=archidekt&id=${encodeURIComponent(archId)}`,
+      { signal: controller.signal }
+    );
+    clearTimeout(timeoutId);
+    if (response.ok) {
+      const contentType = response.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        const json = await response.json();
+        const parsed = parseArchidektApiPayload(json);
+        if (parsed && parsed.length > 0) {
+          return parsed;
+        }
+      }
+    }
+  } catch {
+    // Fallback to public relays if serverless endpoint isn't deployed yet
+  }
+
+  // 2. Fallback: Public CORS relays
   const target = `https://archidekt.com/api/decks/${archId}/`;
   const endpoints = [
-    target,
-    `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(target)}`,
-    `https://corsproxy.io/?${encodeURIComponent(target)}`,
-    `https://api.allorigins.win/raw?url=${encodeURIComponent(target)}`
+    `https://corsproxy.io/?url=${encodeURIComponent(target)}`,
+    `https://api.allorigins.win/get?url=${encodeURIComponent(target)}`,
+    `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(target)}`
   ];
 
   for (const endpoint of endpoints) {
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 6000);
+      const timeoutId = setTimeout(() => controller.abort(), 7000);
       const response = await fetch(endpoint, { signal: controller.signal });
       clearTimeout(timeoutId);
       if (response.ok) {
-        const json = await response.json();
+        let json = await response.json();
+        if (json && typeof json.contents === 'string') {
+          json = JSON.parse(json.contents);
+        }
         const parsed = parseArchidektApiPayload(json);
         if (parsed && parsed.length > 0) {
           return parsed;
@@ -490,9 +516,9 @@ async function fetchDeckCardsByUrl(url) {
 }
 
 const VERCEL_MOXFIELD_PROXY_CODE = `export default async function handler(req, res) {
-  const { id } = req.query;
+  const { id, site } = req.query;
   if (!id || !/^[A-Za-z0-9_-]+$/.test(id)) {
-    return res.status(400).json({ error: 'Invalid Moxfield deck ID' });
+    return res.status(400).json({ error: 'Invalid deck ID' });
   }
 
   const headers = {
@@ -501,6 +527,16 @@ const VERCEL_MOXFIELD_PROXY_CODE = `export default async function handler(req, r
   };
 
   try {
+    if (site === 'archidekt') {
+      const archRes = await fetch(\`https://archidekt.com/api/decks/\${id}/\`, { headers });
+      if (!archRes.ok) {
+        return res.status(archRes.status).json({ error: 'Archidekt fetch failed' });
+      }
+      const data = await archRes.json();
+      res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=300');
+      return res.status(200).json(data);
+    }
+
     let response = await fetch(\`https://api2.moxfield.com/v3/decks/all/\${id}\`, { headers });
     if (!response.ok) {
       response = await fetch(\`https://api2.moxfield.com/v2/decks/all/\${id}\`, { headers });
@@ -4508,7 +4544,7 @@ export default function App() {
                 <div className="flex items-center justify-between gap-2">
                   <div className="text-xs font-bold text-indigo-200 flex items-center gap-1.5">
                     <Cloud className="w-3.5 h-3.5 text-indigo-400" />
-                    <span>Vercel Moxfield Auto-Sync Proxy</span>
+                    <span>Vercel Deck Auto-Sync Proxy (Moxfield & Archidekt)</span>
                   </div>
                   <button
                     type="button"
@@ -4527,7 +4563,7 @@ export default function App() {
                   </button>
                 </div>
                 <p className="text-[11px] text-slate-300 leading-relaxed">
-                  Create a file named <code className="text-amber-300">api/moxfield.js</code> in the root folder of your StackBlitz/GitHub project and paste this code before deploying to Vercel so your app fetches Moxfield decks directly without Cloudflare blocks.
+                  Paste this into <code className="text-amber-300">api/moxfield.js</code> in your GitHub repo so Vercel fetches both <strong>Archidekt</strong> and <strong>Moxfield</strong> decklists directly on the server without browser CORS blocks.
                 </p>
               </div>
 
