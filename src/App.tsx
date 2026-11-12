@@ -41,10 +41,7 @@ import {
   UserPlus,
   Cloud,
   Lock,
-  Mail,
-  Zap,
-  Share2,
-  PieChart
+  Mail
 } from 'lucide-react';
 import { initializeApp } from 'firebase/app';
 import {
@@ -60,7 +57,6 @@ import {
 import {
   getFirestore,
   doc,
-  getDoc,
   setDoc,
   deleteDoc,
   onSnapshot,
@@ -190,403 +186,6 @@ const COMMANDER_BRACKETS = {
     desc: 'Competitive EDH',
     badge: 'bg-rose-500/15 text-rose-300 border-rose-500/35'
   }
-};
-
-// ============================================================================
-// OFFICIAL EDH "GAME CHANGERS" LIST (FOR BRACKET & DECK POWER VERIFICATION)
-// ============================================================================
-const EDH_GAME_CHANGERS = new Set([
-  'ancient tomb',
-  'bolas\'s citadel',
-  'chrome mox',
-  'cyclonic rift',
-  'demonic tutor',
-  'drannith magistrate',
-  'enlightened tutor',
-  'expropriate',
-  'fierce guardianship',
-  'force of will',
-  'gaea\'s cradle',
-  'glacial chasm',
-  'grand arbiter augustin iv',
-  'grim monolith',
-  'imperial seal',
-  'jeska\'s will',
-  'jin-gitaxias, core augur',
-  'kinnan, bonder prodigy',
-  'lion\'s eye diamond',
-  'mana vault',
-  'mox diamond',
-  'mystical tutor',
-  'notion thief',
-  'opposition agent',
-  'rhystic study',
-  'serra\'s sanctum',
-  'smothering tithe',
-  'survival of the fittest',
-  'tergrid, god of fright',
-  'thassa\'s oracle',
-  'the one ring',
-  'the tabernacle at pendrell vale',
-  'trinisphere',
-  'trouble in pairs',
-  'underworld breach',
-  'urza, lord high artificer',
-  'vampiric tutor',
-  'vorinclex, voice of hunger',
-  'winota, joiner of forces',
-  'worldly tutor'
-]);
-
-// ============================================================================
-// SCRYFALL COMMANDER ART CACHE & FETCHER (OPTION 1)
-// ============================================================================
-const commanderArtCache = new Map();
-
-async function fetchCommanderArtCrop(cardName) {
-  if (!cardName) return null;
-  const cleanName = cardName.split('//')[0].trim();
-  const key = cleanName.toLowerCase();
-  if (commanderArtCache.has(key)) {
-    return commanderArtCache.get(key);
-  }
-  try {
-    const res = await fetch(
-      `https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(cleanName)}`
-    );
-    if (!res.ok) {
-      commanderArtCache.set(key, null);
-      return null;
-    }
-    const data = await res.json();
-    const artUrl =
-      data.image_uris?.art_crop ||
-      data.card_faces?.[0]?.image_uris?.art_crop ||
-      data.image_uris?.normal ||
-      null;
-    commanderArtCache.set(key, artUrl);
-    return artUrl;
-  } catch {
-    return null;
-  }
-}
-
-const CommanderArtBanner = ({ deck, heightClass = 'h-24', children }) => {
-  const [primaryArt, setPrimaryArt] = useState(deck?.primaryArtUrl || null);
-  const [partnerArt, setPartnerArt] = useState(deck?.partnerArtUrl || null);
-
-  useEffect(() => {
-    let active = true;
-    const primaryName =
-      deck?.primaryCommander || (deck?.name ? deck.name.split(' & ')[0].trim() : '');
-    const partnerName =
-      deck?.partnerCommander ||
-      (deck?.name && deck.name.includes(' & ')
-        ? deck.name.split(' & ').slice(1).join(' & ').trim()
-        : '');
-
-    if (deck?.primaryArtUrl) {
-      setPrimaryArt(deck.primaryArtUrl);
-    } else if (primaryName) {
-      fetchCommanderArtCrop(primaryName).then((url) => {
-        if (active && url) setPrimaryArt(url);
-      });
-    } else {
-      setPrimaryArt(null);
-    }
-
-    if (deck?.partnerArtUrl) {
-      setPartnerArt(deck.partnerArtUrl);
-    } else if (partnerName) {
-      fetchCommanderArtCrop(partnerName).then((url) => {
-        if (active && url) setPartnerArt(url);
-      });
-    } else {
-      setPartnerArt(null);
-    }
-
-    return () => {
-      active = false;
-    };
-  }, [deck?.id, deck?.name, deck?.primaryCommander, deck?.partnerCommander, deck?.primaryArtUrl, deck?.partnerArtUrl]);
-
-  return (
-    <div className={`relative ${heightClass} w-full overflow-hidden bg-slate-950`}>
-      {primaryArt && partnerArt ? (
-        <div className="absolute inset-0 grid grid-cols-2">
-          <img
-            src={primaryArt}
-            alt={deck?.name || 'Primary Commander'}
-            className="w-full h-full object-cover object-center opacity-55 group-hover:scale-105 transition-transform duration-500"
-          />
-          <img
-            src={partnerArt}
-            alt={deck?.partnerCommander || 'Partner Commander'}
-            className="w-full h-full object-cover object-center opacity-55 group-hover:scale-105 transition-transform duration-500 border-l border-slate-900/80"
-          />
-        </div>
-      ) : primaryArt ? (
-        <img
-          src={primaryArt}
-          alt={deck?.name || 'Commander Art'}
-          className="absolute inset-0 w-full h-full object-cover object-center opacity-55 group-hover:scale-105 transition-transform duration-500"
-        />
-      ) : (
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-800/80 via-slate-900 to-indigo-950/60" />
-      )}
-      <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/55 to-slate-950/40" />
-      <div className="relative z-10 h-full flex flex-col justify-between p-4">{children}</div>
-    </div>
-  );
-};
-
-// ============================================================================
-// DECK ANALYTICS PANEL: MANA CURVE, CARD TYPES & GAME CHANGERS (OPTION 3)
-// ============================================================================
-const DeckAnalyticsTab = ({ decklist = [], onPreviewCard }) => {
-  const [enrichedCards, setEnrichedCards] = useState([]);
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    if (!Array.isArray(decklist) || decklist.length === 0) {
-      setEnrichedCards([]);
-      return;
-    }
-    let active = true;
-    setLoading(true);
-
-    const fetchBatchMetadata = async () => {
-      try {
-        const uniqueNames = Array.from(
-          new Set(decklist.map((c) => c.name.split('//')[0].trim()))
-        );
-        const chunks = [];
-        for (let i = 0; i < uniqueNames.length; i += 75) {
-          chunks.push(uniqueNames.slice(i, i + 75));
-        }
-
-        const metaMap = new Map();
-        for (const chunk of chunks) {
-          const res = await fetch('https://api.scryfall.com/cards/collection', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              identifiers: chunk.map((name) => ({ name }))
-            })
-          });
-          if (res.ok) {
-            const json = await res.json();
-            (json.data || []).forEach((card) => {
-              metaMap.set(card.name.toLowerCase(), card);
-              if (card.name.includes('//')) {
-                metaMap.set(card.name.split('//')[0].trim().toLowerCase(), card);
-              }
-            });
-          }
-        }
-
-        if (!active) return;
-        const merged = decklist.map((entry) => {
-          const primaryKey = entry.name.split('//')[0].trim().toLowerCase();
-          const scry = metaMap.get(entry.name.toLowerCase()) || metaMap.get(primaryKey);
-          return {
-            ...entry,
-            cmc: typeof scry?.cmc === 'number' ? scry.cmc : null,
-            typeLine: scry?.type_line || ''
-          };
-        });
-        setEnrichedCards(merged);
-      } catch {
-        if (active) setEnrichedCards(decklist);
-      } finally {
-        if (active) setLoading(false);
-      }
-    };
-
-    fetchBatchMetadata();
-    return () => {
-      active = false;
-    };
-  }, [decklist]);
-
-  const stats = useMemo(() => {
-    const gameChangers = decklist.filter((c) =>
-      EDH_GAME_CHANGERS.has(c.name.toLowerCase())
-    );
-
-    const curveBuckets = [
-      { label: '0', count: 0 },
-      { label: '1', count: 0 },
-      { label: '2', count: 0 },
-      { label: '3', count: 0 },
-      { label: '4', count: 0 },
-      { label: '5', count: 0 },
-      { label: '6', count: 0 },
-      { label: '7+', count: 0 }
-    ];
-
-    const typeCounts = {
-      Creatures: 0,
-      Instants: 0,
-      Sorceries: 0,
-      Artifacts: 0,
-      Enchantments: 0,
-      Planeswalkers: 0,
-      Lands: 0
-    };
-
-    let nonLandCards = 0;
-    let totalCmc = 0;
-
-    enrichedCards.forEach((c) => {
-      const qty = c.qty || 1;
-      const tl = (c.typeLine || '').toLowerCase();
-      const isLand = tl.includes('land');
-
-      if (isLand) {
-        typeCounts.Lands += qty;
-      } else {
-        if (tl.includes('creature')) typeCounts.Creatures += qty;
-        if (tl.includes('instant')) typeCounts.Instants += qty;
-        if (tl.includes('sorcery')) typeCounts.Sorceries += qty;
-        if (tl.includes('artifact')) typeCounts.Artifacts += qty;
-        if (tl.includes('enchantment')) typeCounts.Enchantments += qty;
-        if (tl.includes('planeswalker')) typeCounts.Planeswalkers += qty;
-
-        if (typeof c.cmc === 'number') {
-          nonLandCards += qty;
-          totalCmc += c.cmc * qty;
-          const idx = Math.min(7, Math.max(0, Math.floor(c.cmc)));
-          curveBuckets[idx].count += qty;
-        }
-      }
-    });
-
-    const maxBucket = Math.max(...curveBuckets.map((b) => b.count), 1);
-    const avgCmc = nonLandCards > 0 ? (totalCmc / nonLandCards).toFixed(2) : '—';
-
-    return {
-      gameChangers,
-      curveBuckets,
-      maxBucket,
-      typeCounts,
-      avgCmc,
-      nonLandCards
-    };
-  }, [decklist, enrichedCards]);
-
-  if (decklist.length === 0) {
-    return (
-      <div className="py-12 px-4 text-center rounded-2xl border border-dashed border-slate-800 bg-slate-950/50 space-y-2">
-        <PieChart className="w-8 h-8 text-slate-600 mx-auto" />
-        <p className="text-sm font-semibold text-slate-300">
-          Add or sync your decklist first to unlock Curve & Game Changers analysis
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-5">
-      {/* Official EDH Game Changers Check */}
-      <div className="rounded-2xl bg-slate-950/70 border border-amber-500/30 p-4 space-y-2.5">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <Zap className="w-4 h-4 text-amber-400" />
-            <h3 className="text-sm font-bold text-white">
-              Official EDH "Game Changers" Detector
-            </h3>
-          </div>
-          <span
-            className={`px-2.5 py-0.5 rounded-full text-xs font-extrabold border ${
-              stats.gameChangers.length === 0
-                ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
-                : 'bg-amber-500/15 text-amber-300 border-amber-500/30'
-            }`}
-          >
-            {stats.gameChangers.length}{' '}
-            {stats.gameChangers.length === 1 ? 'Game Changer' : 'Game Changers'}
-          </span>
-        </div>
-
-        {stats.gameChangers.length === 0 ? (
-          <p className="text-xs text-slate-400">
-            Zero official EDH Game Changers detected — great fit for Bracket 2 (Core) or lower-power pods!
-          </p>
-        ) : (
-          <div className="space-y-2">
-            <p className="text-xs text-slate-400">
-              Flagged high-impact staples in this list (click any card to preview):
-            </p>
-            <div className="flex flex-wrap gap-1.5">
-              {stats.gameChangers.map((gc) => (
-                <button
-                  key={gc.name}
-                  type="button"
-                  onClick={() => onPreviewCard(gc.name)}
-                  className="px-2.5 py-1 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-200 border border-amber-500/35 text-xs font-semibold transition-colors"
-                >
-                  ⚡ {gc.name}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Mana Curve & Card Type Breakdown */}
-      {loading ? (
-        <div className="py-10 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
-          <RefreshCw className="w-4 h-4 animate-spin text-amber-400" />
-          <span>Analyzing mana curve & card types via Scryfall...</span>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-          {/* Mana Curve Chart */}
-          <div className="lg:col-span-7 rounded-2xl bg-slate-950/70 border border-slate-800 p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-bold text-white">Mana Curve (Non-Land Spells)</h3>
-              <span className="text-xs text-slate-400">
-                Avg Mana Value: <strong className="text-indigo-300">{stats.avgCmc}</strong>
-              </span>
-            </div>
-
-            <div className="h-44 pt-4 flex items-end justify-between gap-2">
-              {stats.curveBuckets.map((b) => {
-                const heightPct = Math.round((b.count / stats.maxBucket) * 100);
-                return (
-                  <div key={b.label} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end">
-                    <span className="text-[11px] font-bold text-slate-300">{b.count}</span>
-                    <div className="w-full bg-slate-900 rounded-t-lg h-28 flex items-end overflow-hidden border border-slate-800/80">
-                      <div
-                        style={{ height: `${Math.max(b.count > 0 ? 10 : 0, heightPct)}%` }}
-                        className="w-full bg-gradient-to-t from-indigo-600 to-sky-400 rounded-t-md transition-all duration-500"
-                      />
-                    </div>
-                    <span className="text-xs font-extrabold text-slate-400">{b.label}</span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Card Type Breakdown */}
-          <div className="lg:col-span-5 rounded-2xl bg-slate-950/70 border border-slate-800 p-4 space-y-2.5">
-            <h3 className="text-sm font-bold text-white mb-1">Card Type Breakdown</h3>
-            {Object.entries(stats.typeCounts).map(([typeName, count]) => (
-              <div
-                key={typeName}
-                className="flex items-center justify-between text-xs py-1.5 px-2.5 rounded-lg bg-slate-900/90 border border-slate-800/80"
-              >
-                <span className="text-slate-300 font-medium">{typeName}</span>
-                <span className="font-extrabold text-white">{count}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
 };
 
 // ============================================================================
@@ -1329,7 +928,7 @@ export default function App() {
   const [authSubmitting, setAuthSubmitting] = useState(false);
 
   // Navigation & UI State
-  const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard' | 'decks' | 'pod' | 'history'
+  const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard' | 'decks' | 'history'
   const [sortBy, setSortBy] = useState('least_played');
   const [bracketFilter, setBracketFilter] = useState('all'); // 'all' | '1' | '2' | '3' | '4' | '5'
   const [searchQuery, setSearchQuery] = useState('');
@@ -1340,15 +939,7 @@ export default function App() {
   const [isDeckModalOpen, setIsDeckModalOpen] = useState(false);
   const [isBackupModalOpen, setIsBackupModalOpen] = useState(false);
   const [isSpinModalOpen, setIsSpinModalOpen] = useState(false);
-  const [isWrappedModalOpen, setIsWrappedModalOpen] = useState(false);
   const [confirmAction, setConfirmAction] = useState(null);
-
-  // Shared Playgroup / Pod Room State (Option 2)
-  const [activePodId, setActivePodId] = useState('');
-  const [podJoinInput, setPodJoinInput] = useState('');
-  const [podNameInput, setPodNameInput] = useState('');
-  const [podData, setPodData] = useState(null);
-  const [podLoading, setPodLoading] = useState(false);
 
   // "Spin the Pod" Weighted Randomizer State
   const [spinBracketFilter, setSpinBracketFilter] = useState('all');
@@ -1392,8 +983,6 @@ export default function App() {
   const [deckBracket, setDeckBracket] = useState(3);
   const [deckArchetype, setDeckArchetype] = useState('');
   const [deckMoxfield, setDeckMoxfield] = useState('');
-  const [primaryArtUrl, setPrimaryArtUrl] = useState(null);
-  const [partnerArtUrl, setPartnerArtUrl] = useState(null);
   const [initialDecklistText, setInitialDecklistText] = useState('');
   const [isSavingDeck, setIsSavingDeck] = useState(false);
 
@@ -1442,8 +1031,6 @@ export default function App() {
     if (!user) {
       setDecks([]);
       setMatches([]);
-      setActivePodId('');
-      setPodData(null);
       setCloudLoading(false);
       return;
     }
@@ -1451,20 +1038,6 @@ export default function App() {
     setCloudLoading(true);
     const decksRef = collection(db, 'artifacts', appId, 'users', user.uid, 'decks');
     const matchesRef = collection(db, 'artifacts', appId, 'users', user.uid, 'matches');
-    const profileRef = doc(db, 'artifacts', appId, 'users', user.uid, 'profile', 'settings');
-
-    const unsubProfile = onSnapshot(
-      profileRef,
-      (snap) => {
-        if (snap.exists() && snap.data()?.activePodId) {
-          setActivePodId(snap.data().activePodId);
-        } else {
-          setActivePodId('');
-          setPodData(null);
-        }
-      },
-      () => {}
-    );
 
     const unsubDecks = onSnapshot(
       decksRef,
@@ -1496,36 +1069,10 @@ export default function App() {
     );
 
     return () => {
-      unsubProfile();
       unsubDecks();
       unsubMatches();
     };
   }, [authReady, user]);
-
-  // Live Pod Listener (Option 2)
-  useEffect(() => {
-    if (!authReady || !user || !activePodId) {
-      setPodData(null);
-      return;
-    }
-    setPodLoading(true);
-    const podDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'pods', activePodId);
-    const unsubPod = onSnapshot(
-      podDocRef,
-      (snap) => {
-        if (snap.exists()) {
-          setPodData({ id: snap.id, ...snap.data() });
-        } else {
-          setPodData(null);
-        }
-        setPodLoading(false);
-      },
-      () => {
-        setPodLoading(false);
-      }
-    );
-    return () => unsubPod();
-  }, [authReady, user, activePodId]);
 
   // Firestore Cloud Write Helpers
   const saveDeckToCloud = async (deckObj) => {
@@ -1915,13 +1462,6 @@ export default function App() {
         ? [...playedDecks].sort((a, b) => b.winRate - a.winRate || b.wins - a.wins)[0]
         : null;
 
-    const topSignatureCommander =
-      playedDecks.length > 0
-        ? [...playedDecks].sort(
-            (a, b) => b.wins - a.wins || b.winRate - a.winRate || b.games - a.games
-          )[0]
-        : null;
-
     // Bracket Breakdown (1-5)
     const bracketStats = [1, 2, 3, 4, 5].map((b) => {
       const bDecks = deckStats.filter((d) => (d.bracket || 3) === b);
@@ -1946,152 +1486,11 @@ export default function App() {
       leastPlayed,
       mostPlayed,
       highestWinRate,
-      topSignatureCommander,
       topGlobalMvp,
       topGlobalFun,
       bracketStats
     };
   }, [decks, matches]);
-
-  // Sync current player's stats into active Pod Room whenever stats change
-  useEffect(() => {
-    if (!user || user.isAnonymous || !activePodId || !podData || cloudLoading) return;
-    const displayName = user.displayName || user.email?.split('@')[0] || 'Player';
-    const currentStats = {
-      uid: user.uid,
-      name: displayName,
-      totalDecks: decks.length,
-      totalGames: analytics.totalGames,
-      totalWins: analytics.totalWins,
-      winRate: analytics.overallWinRate,
-      signatureCommander: analytics.topSignatureCommander?.name || decks[0]?.name || '—',
-      updatedAt: Date.now()
-    };
-
-    const existing = podData.members?.[user.uid];
-    if (
-      !existing ||
-      existing.name !== currentStats.name ||
-      existing.totalDecks !== currentStats.totalDecks ||
-      existing.totalGames !== currentStats.totalGames ||
-      existing.totalWins !== currentStats.totalWins ||
-      existing.signatureCommander !== currentStats.signatureCommander
-    ) {
-      setDoc(
-        doc(db, 'artifacts', appId, 'public', 'data', 'pods', activePodId),
-        {
-          members: {
-            ...(podData.members || {}),
-            [user.uid]: currentStats
-          }
-        },
-        { merge: true }
-      ).catch(() => {});
-    }
-  }, [user, activePodId, podData, cloudLoading, decks, analytics]);
-
-  const handleCreatePod = async (e) => {
-    e.preventDefault();
-    if (!user || user.isAnonymous) {
-      openAccountModal('signup');
-      showToast('Create a free account first to host or join a Pod!', 'error');
-      return;
-    }
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    let code = '';
-    for (let i = 0; i < 6; i++) {
-      code += chars[Math.floor(Math.random() * chars.length)];
-    }
-    const podTitle = podNameInput.trim() || `${accountLabel}'s Playgroup`;
-    const memberSnapshot = {
-      uid: user.uid,
-      name: accountLabel,
-      totalDecks: decks.length,
-      totalGames: analytics.totalGames,
-      totalWins: analytics.totalWins,
-      winRate: analytics.overallWinRate,
-      signatureCommander: analytics.topSignatureCommander?.name || decks[0]?.name || '—',
-      updatedAt: Date.now()
-    };
-
-    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'pods', code), {
-      name: podTitle,
-      createdBy: user.uid,
-      createdAt: new Date().toISOString(),
-      members: {
-        [user.uid]: memberSnapshot
-      }
-    });
-    await setDoc(
-      doc(db, 'artifacts', appId, 'users', user.uid, 'profile', 'settings'),
-      { activePodId: code },
-      { merge: true }
-    );
-    setActivePodId(code);
-    setPodNameInput('');
-    showToast(`Created Pod ${code}! Share the code with your playgroup.`);
-  };
-
-  const handleJoinPod = async (e) => {
-    e.preventDefault();
-    if (!user || user.isAnonymous) {
-      openAccountModal('signup');
-      showToast('Create a free account first to join a Pod!', 'error');
-      return;
-    }
-    const cleanCode = podJoinInput.trim().toUpperCase().replace(/^POD-/, '');
-    if (cleanCode.length < 4) {
-      showToast('Enter a valid 6-character Pod invite code', 'error');
-      return;
-    }
-    const podSnap = await getDoc(
-      doc(db, 'artifacts', appId, 'public', 'data', 'pods', cleanCode)
-    );
-    if (!podSnap.exists()) {
-      showToast(`No Pod found with code "${cleanCode}"`, 'error');
-      return;
-    }
-    const memberSnapshot = {
-      uid: user.uid,
-      name: accountLabel,
-      totalDecks: decks.length,
-      totalGames: analytics.totalGames,
-      totalWins: analytics.totalWins,
-      winRate: analytics.overallWinRate,
-      signatureCommander: analytics.topSignatureCommander?.name || decks[0]?.name || '—',
-      updatedAt: Date.now()
-    };
-    await setDoc(
-      doc(db, 'artifacts', appId, 'public', 'data', 'pods', cleanCode),
-      {
-        members: {
-          ...(podSnap.data()?.members || {}),
-          [user.uid]: memberSnapshot
-        }
-      },
-      { merge: true }
-    );
-    await setDoc(
-      doc(db, 'artifacts', appId, 'users', user.uid, 'profile', 'settings'),
-      { activePodId: cleanCode },
-      { merge: true }
-    );
-    setActivePodId(cleanCode);
-    setPodJoinInput('');
-    showToast(`Joined Pod ${cleanCode}!`);
-  };
-
-  const handleLeavePod = async () => {
-    if (!user) return;
-    await setDoc(
-      doc(db, 'artifacts', appId, 'users', user.uid, 'profile', 'settings'),
-      { activePodId: '' },
-      { merge: true }
-    );
-    setActivePodId('');
-    setPodData(null);
-    showToast('Left Pod room');
-  };
 
   // Filtered & Sorted Roster
   const displayedDecks = useMemo(() => {
@@ -2371,8 +1770,6 @@ export default function App() {
     setDeckBracket(3);
     setDeckArchetype('');
     setDeckMoxfield('');
-    setPrimaryArtUrl(null);
-    setPartnerArtUrl(null);
     setInitialDecklistText('');
     setIsDeckModalOpen(true);
   };
@@ -2402,15 +1799,12 @@ export default function App() {
     setDeckBracket(deck.bracket || 3);
     setDeckArchetype(deck.archetype || '');
     setDeckMoxfield(deck.moxfieldUrl || '');
-    setPrimaryArtUrl(deck.primaryArtUrl || null);
-    setPartnerArtUrl(deck.partnerArtUrl || null);
     setInitialDecklistText('');
     setIsDeckModalOpen(true);
   };
 
   const handleSelectPrimaryCommander = (card) => {
     setDeckName(card.name);
-    setPrimaryArtUrl(card.imageUrl || null);
     const nextPrimary = card.colors || [];
     setPrimaryColors(nextPrimary);
     const combined = Array.from(
@@ -2421,7 +1815,6 @@ export default function App() {
 
   const handleSelectPartnerCommander = (card) => {
     setPartnerName(card.name);
-    setPartnerArtUrl(card.imageUrl || null);
     const nextPartner = card.colors || [];
     setPartnerColors(nextPartner);
     const combined = Array.from(new Set([...primaryColors, ...nextPartner])).sort(
@@ -2435,7 +1828,6 @@ export default function App() {
     if (!checked) {
       setPartnerName('');
       setPartnerColors([]);
-      setPartnerArtUrl(null);
     }
   };
 
@@ -2504,10 +1896,6 @@ export default function App() {
           name: combinedName,
           primaryCommander: primaryTrimmed,
           partnerCommander: partnerTrimmed,
-          primaryArtUrl: primaryArtUrl || editingDeck.primaryArtUrl || null,
-          partnerArtUrl: partnerTrimmed
-            ? partnerArtUrl || editingDeck.partnerArtUrl || null
-            : null,
           colors: deckColors,
           bracket: Number(deckBracket) || 3,
           archetype: deckArchetype.trim(),
@@ -2568,8 +1956,6 @@ export default function App() {
           name: combinedName,
           primaryCommander: primaryTrimmed,
           partnerCommander: partnerTrimmed,
-          primaryArtUrl: primaryArtUrl || null,
-          partnerArtUrl: partnerTrimmed ? partnerArtUrl || null : null,
           colors: deckColors,
           bracket: Number(deckBracket) || 3,
           archetype: deckArchetype.trim(),
@@ -2796,16 +2182,6 @@ export default function App() {
             </button>
 
             <button
-              onClick={() => setIsWrappedModalOpen(true)}
-              disabled={decks.length === 0}
-              title="Commander Wrapped — Shareable Season Recap"
-              className="px-3 py-2 sm:px-3.5 sm:py-2 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 disabled:opacity-40 text-amber-200 border border-amber-500/40 transition-all flex items-center gap-1.5 text-xs sm:text-sm font-bold"
-            >
-              <Sparkles className="w-4 h-4 text-amber-300" />
-              <span className="hidden lg:inline">Wrapped</span>
-            </button>
-
-            <button
               onClick={() => setIsBackupModalOpen(true)}
               title="Backup, Export & Data Settings"
               className="p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700/70 transition-colors flex items-center gap-1.5 text-xs font-medium"
@@ -2838,7 +2214,6 @@ export default function App() {
           {[
             { id: 'dashboard', label: 'Overview & Analytics', icon: BarChart3 },
             { id: 'decks', label: `My Decks (${decks.length})`, icon: Layers },
-            { id: 'pod', label: activePodId ? `Pod Room (${activePodId})` : 'Playgroup Pod', icon: Users },
             { id: 'history', label: `Match History (${matches.length})`, icon: History }
           ].map((tab) => {
             const Icon = tab.icon;
@@ -3439,376 +2814,175 @@ export default function App() {
                       openDeckDrawer(deck);
                     }
                   }}
-                  className="group rounded-2xl bg-slate-900/95 border border-slate-800 hover:border-amber-500/50 hover:bg-slate-900 overflow-hidden flex flex-col justify-between transition-all shadow-lg shadow-black/20 cursor-pointer text-left"
+                  className="group rounded-2xl bg-slate-900/95 border border-slate-800 hover:border-amber-500/50 hover:bg-slate-900 p-5 flex flex-col justify-between transition-all shadow-lg shadow-black/20 cursor-pointer text-left"
                 >
                   <div>
-                    {/* Scryfall Commander Art Banner (Option 1) */}
-                    <CommanderArtBanner deck={deck} heightClass="h-28">
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-1.5 min-w-0">
-                          {deck.colors.map((c) => (
-                            <ManaPip key={c} color={c} size="md" />
-                          ))}
-                          <span
-                            className={`ml-1 px-1.5 py-0.5 rounded text-[10px] font-bold border shrink-0 backdrop-blur-sm ${
-                              COMMANDER_BRACKETS[deck.bracket || 3]?.badge
-                            }`}
+                    {/* Top Row: Mana Pips + Bracket Badge + Moxfield/Edit */}
+                    <div className="flex items-center justify-between gap-2 mb-3">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        {deck.colors.map((c) => (
+                          <ManaPip key={c} color={c} size="md" />
+                        ))}
+                        <span
+                          className={`ml-1 px-1.5 py-0.5 rounded text-[10px] font-bold border shrink-0 ${
+                            COMMANDER_BRACKETS[deck.bracket || 3]?.badge
+                          }`}
+                        >
+                          B{deck.bracket || 3}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-1 shrink-0">
+                        {deck.moxfieldUrl ? (
+                          <a
+                            href={deck.moxfieldUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            title={`Open Your ${getDeckSiteName(deck.moxfieldUrl)} Decklist`}
+                            className="px-2 py-1 rounded-lg bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 border border-indigo-500/30 text-[11px] font-semibold flex items-center gap-1 transition-colors"
                           >
-                            B{deck.bracket || 3}
-                          </span>
-                        </div>
-
-                        <div className="flex items-center gap-1 shrink-0">
-                          {deck.moxfieldUrl ? (
-                            <a
-                              href={deck.moxfieldUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              onClick={(e) => e.stopPropagation()}
-                              title={`Open Your ${getDeckSiteName(deck.moxfieldUrl)} Decklist`}
-                              className="px-2 py-1 rounded-lg bg-slate-950/80 hover:bg-indigo-500/30 text-indigo-300 border border-indigo-500/40 backdrop-blur-sm text-[11px] font-semibold flex items-center gap-1 transition-colors"
-                            >
-                              <span>{getDeckSiteName(deck.moxfieldUrl)}</span>
-                              <ExternalLink className="w-3 h-3" />
-                            </a>
-                          ) : (
-                            <button
-                              onClick={(e) => openEditDeckModal(deck, e)}
-                              title="Attach your Moxfield or Archidekt decklist URL"
-                              className="px-2 py-1 rounded-lg bg-slate-950/75 hover:bg-slate-800 text-slate-300 border border-slate-700/80 backdrop-blur-sm text-[11px] font-medium transition-colors"
-                            >
-                              + Deck URL
-                            </button>
-                          )}
-
+                            <span>{getDeckSiteName(deck.moxfieldUrl)}</span>
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                        ) : (
                           <button
                             onClick={(e) => openEditDeckModal(deck, e)}
-                            title="Edit Deck Details"
-                            className="p-1.5 rounded-lg bg-slate-950/70 text-slate-300 hover:text-white hover:bg-slate-800 backdrop-blur-sm transition-colors"
+                            title="Attach your Moxfield or Archidekt decklist URL"
+                            className="px-2 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-700/70 text-[11px] font-medium transition-colors"
                           >
-                            <Edit3 className="w-3.5 h-3.5" />
+                            + Deck URL
                           </button>
-                        </div>
-                      </div>
-
-                      <div className="flex items-end justify-between gap-2">
-                        <div className="min-w-0">
-                          <h3 className="text-base font-extrabold text-white group-hover:text-amber-300 transition-colors leading-snug drop-shadow">
-                            {deck.name}
-                          </h3>
-                          {deck.archetype && (
-                            <p className="text-xs text-slate-300 truncate drop-shadow">
-                              {deck.archetype}
-                            </p>
-                          )}
-                        </div>
-                        <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-amber-400 group-hover:translate-x-0.5 transition-all shrink-0" />
-                      </div>
-                    </CommanderArtBanner>
-
-                    <div className="p-5 pt-3.5">
-                      {/* Decklist & Award Highlights */}
-                      <div className="flex flex-wrap items-center gap-1.5 mb-3">
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-950 border border-slate-800 text-[11px] text-slate-300">
-                          <FileText className="w-3 h-3 text-slate-400" />
-                          {deck.totalCardCount > 0 ? `${deck.totalCardCount} cards` : 'Add decklist'}
-                        </span>
-
-                        {deck.topMvpCards[0] && (
-                          <span
-                            title={`Top MVP: ${deck.topMvpCards[0].name} (${deck.topMvpCards[0].count}x)`}
-                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/25 text-[11px] text-amber-300 max-w-[165px] truncate"
-                          >
-                            <Star className="w-3 h-3 shrink-0" />
-                            <span className="truncate">{deck.topMvpCards[0].name}</span>
-                          </span>
                         )}
 
-                        {deck.topFunCards[0] && (
-                          <span
-                            title={`Most Fun: ${deck.topFunCards[0].name} (${deck.topFunCards[0].count}x)`}
-                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-pink-500/10 border border-pink-500/25 text-[11px] text-pink-300 max-w-[165px] truncate"
-                          >
-                            <Smile className="w-3 h-3 shrink-0" />
-                            <span className="truncate">{deck.topFunCards[0].name}</span>
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Stats Grid */}
-                      <div className="grid grid-cols-3 gap-2 p-2.5 rounded-xl bg-slate-950/80 border border-slate-800/80 mb-3">
-                        <div>
-                          <div className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
-                            Record
-                          </div>
-                          <div className="text-sm font-bold text-slate-100 mt-0.5">
-                            {deck.wins}W–{deck.losses}L
-                          </div>
-                        </div>
-                        <div>
-                          <div className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
-                            Win Rate
-                          </div>
-                          <div
-                            className={`text-sm font-bold mt-0.5 ${
-                              deck.games === 0
-                                ? 'text-slate-500'
-                                : deck.winRate >= 25
-                                ? 'text-emerald-400'
-                                : 'text-amber-300'
-                            }`}
-                          >
-                            {deck.games > 0 ? `${deck.winRate}%` : '—'}
-                          </div>
-                        </div>
-                        <div>
-                          <div className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
-                            Play Share
-                          </div>
-                          <div className="text-sm font-bold text-indigo-300 mt-0.5">
-                            {deck.playShare}%
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Meta Footer */}
-                      <div className="flex items-center justify-between text-[11px] text-slate-400 mb-3">
-                        <span>
-                          {deck.lastPlayed ? `Last played: ${deck.lastPlayed}` : 'Never played yet'}
-                        </span>
-                        {deck.streak >= 2 && (
-                          <span
-                            className={`px-1.5 py-0.5 rounded font-bold ${
-                              deck.streakType === 'win'
-                                ? 'bg-emerald-500/15 text-emerald-300'
-                                : 'bg-rose-500/15 text-rose-300'
-                            }`}
-                          >
-                            {deck.streak}
-                            {deck.streakType === 'win' ? 'W' : 'L'} Streak
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Quick One-Tap Log Buttons */}
-                      <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800/80">
                         <button
-                          onClick={(e) => handleQuickLog(deck.id, 'win', e)}
-                          className="py-2 px-3 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 active:scale-[0.98] text-emerald-300 border border-emerald-500/30 font-bold text-xs flex items-center justify-center gap-1.5 transition-all"
+                          onClick={(e) => openEditDeckModal(deck, e)}
+                          title="Edit Deck Details"
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
                         >
-                          <Trophy className="w-3.5 h-3.5" />
-                          <span>+ Win</span>
-                        </button>
-                        <button
-                          onClick={(e) => handleQuickLog(deck.id, 'loss', e)}
-                          className="py-2 px-3 rounded-xl bg-slate-800/90 hover:bg-slate-700 active:scale-[0.98] text-slate-200 border border-slate-700 font-semibold text-xs flex items-center justify-center gap-1.5 transition-all"
-                        >
-                          <span>+ Loss</span>
+                          <Edit3 className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </div>
+
+                    {/* Commander Name & Archetype */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <h3 className="text-base font-bold text-white group-hover:text-amber-300 transition-colors leading-snug">
+                          {deck.name}
+                        </h3>
+                        {deck.archetype && (
+                          <p className="text-xs text-slate-400 mt-0.5 mb-2 truncate">
+                            {deck.archetype}
+                          </p>
+                        )}
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-slate-600 group-hover:text-amber-400 group-hover:translate-x-0.5 transition-all shrink-0 mt-1" />
+                    </div>
+
+                    {/* Decklist & Award Highlights */}
+                    <div className="flex flex-wrap items-center gap-1.5 mb-3 mt-1">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-950 border border-slate-800 text-[11px] text-slate-300">
+                        <FileText className="w-3 h-3 text-slate-400" />
+                        {deck.totalCardCount > 0 ? `${deck.totalCardCount} cards` : 'Add decklist'}
+                      </span>
+
+                      {deck.topMvpCards[0] && (
+                        <span
+                          title={`Top MVP: ${deck.topMvpCards[0].name} (${deck.topMvpCards[0].count}x)`}
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/25 text-[11px] text-amber-300 max-w-[165px] truncate"
+                        >
+                          <Star className="w-3 h-3 shrink-0" />
+                          <span className="truncate">{deck.topMvpCards[0].name}</span>
+                        </span>
+                      )}
+
+                      {deck.topFunCards[0] && (
+                        <span
+                          title={`Most Fun: ${deck.topFunCards[0].name} (${deck.topFunCards[0].count}x)`}
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-pink-500/10 border border-pink-500/25 text-[11px] text-pink-300 max-w-[165px] truncate"
+                        >
+                          <Smile className="w-3 h-3 shrink-0" />
+                          <span className="truncate">{deck.topFunCards[0].name}</span>
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Stats Grid */}
+                    <div className="grid grid-cols-3 gap-2 p-2.5 rounded-xl bg-slate-950/80 border border-slate-800/80 mb-3">
+                      <div>
+                        <div className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
+                          Record
+                        </div>
+                        <div className="text-sm font-bold text-slate-100 mt-0.5">
+                          {deck.wins}W–{deck.losses}L
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
+                          Win Rate
+                        </div>
+                        <div
+                          className={`text-sm font-bold mt-0.5 ${
+                            deck.games === 0
+                              ? 'text-slate-500'
+                              : deck.winRate >= 25
+                              ? 'text-emerald-400'
+                              : 'text-amber-300'
+                          }`}
+                        >
+                          {deck.games > 0 ? `${deck.winRate}%` : '—'}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
+                          Play Share
+                        </div>
+                        <div className="text-sm font-bold text-indigo-300 mt-0.5">
+                          {deck.playShare}%
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Meta Footer */}
+                    <div className="flex items-center justify-between text-[11px] text-slate-400 mb-3">
+                      <span>
+                        {deck.lastPlayed ? `Last played: ${deck.lastPlayed}` : 'Never played yet'}
+                      </span>
+                      {deck.streak >= 2 && (
+                        <span
+                          className={`px-1.5 py-0.5 rounded font-bold ${
+                            deck.streakType === 'win'
+                              ? 'bg-emerald-500/15 text-emerald-300'
+                              : 'bg-rose-500/15 text-rose-300'
+                          }`}
+                        >
+                          {deck.streak}
+                          {deck.streakType === 'win' ? 'W' : 'L'} Streak
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Quick One-Tap Log Buttons */}
+                  <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800/80">
+                    <button
+                      onClick={(e) => handleQuickLog(deck.id, 'win', e)}
+                      className="py-2 px-3 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 active:scale-[0.98] text-emerald-300 border border-emerald-500/30 font-bold text-xs flex items-center justify-center gap-1.5 transition-all"
+                    >
+                      <Trophy className="w-3.5 h-3.5" />
+                      <span>+ Win</span>
+                    </button>
+                    <button
+                      onClick={(e) => handleQuickLog(deck.id, 'loss', e)}
+                      className="py-2 px-3 rounded-xl bg-slate-800/90 hover:bg-slate-700 active:scale-[0.98] text-slate-200 border border-slate-700 font-semibold text-xs flex items-center justify-center gap-1.5 transition-all"
+                    >
+                      <span>+ Loss</span>
+                    </button>
                   </div>
                 </div>
               ))}
             </div>
-          </section>
-        )}
-
-        {/* ================================================================== */}
-        {/* PLAYGROUP / POD SHARED ROOM & LEADERBOARD TAB (OPTION 2)           */}
-        {/* ================================================================== */}
-        {activeTab === 'pod' && (
-          <section className="space-y-5">
-            {!activePodId ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                {/* Create a Pod */}
-                <form
-                  onSubmit={handleCreatePod}
-                  className="rounded-2xl bg-slate-900/95 border border-slate-800 p-6 space-y-4"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <div className="p-2.5 rounded-xl bg-amber-500/15 text-amber-400">
-                      <Users className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <h2 className="text-base font-extrabold text-white">
-                        Create a Playgroup Pod Room
-                      </h2>
-                      <p className="text-xs text-slate-400">
-                        Generate a 6-character invite code for your regular pod
-                      </p>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
-                      Playgroup Name
-                    </label>
-                    <input
-                      type="text"
-                      value={podNameInput}
-                      onChange={(e) => setPodNameInput(e.target.value)}
-                      placeholder="e.g., Friday Night Commander Pod"
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    className="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-sm shadow-lg shadow-amber-500/15"
-                  >
-                    Create Pod & Get Invite Code
-                  </button>
-                </form>
-
-                {/* Join an Existing Pod */}
-                <form
-                  onSubmit={handleJoinPod}
-                  className="rounded-2xl bg-slate-900/95 border border-slate-800 p-6 space-y-4"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <div className="p-2.5 rounded-xl bg-indigo-500/15 text-indigo-400">
-                      <LogIn className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <h2 className="text-base font-extrabold text-white">
-                        Join an Existing Pod
-                      </h2>
-                      <p className="text-xs text-slate-400">
-                        Enter a friend's Pod invite code to sync stats live
-                      </p>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
-                      6-Character Pod Code
-                    </label>
-                    <input
-                      type="text"
-                      maxLength={10}
-                      value={podJoinInput}
-                      onChange={(e) => setPodJoinInput(e.target.value.toUpperCase())}
-                      placeholder="e.g., A7X2K9"
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 font-mono text-sm uppercase tracking-widest text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    className="w-full py-2.5 rounded-xl bg-indigo-500 hover:bg-indigo-400 text-white font-bold text-sm shadow-lg shadow-indigo-500/15"
-                  >
-                    Join Pod Leaderboard
-                  </button>
-                </form>
-              </div>
-            ) : (
-              <div className="rounded-2xl bg-slate-900/95 border border-slate-800 p-5 sm:p-6 space-y-5">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-800">
-                  <div>
-                    <div className="flex items-center gap-2.5 flex-wrap">
-                      <h2 className="text-lg font-extrabold text-white">
-                        {podData?.name || 'Playgroup Pod'}
-                      </h2>
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          try {
-                            await navigator.clipboard.writeText(activePodId);
-                            showToast(`Copied Pod invite code: ${activePodId}`);
-                          } catch {}
-                        }}
-                        className="px-2.5 py-1 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/35 font-mono text-xs font-bold flex items-center gap-1.5"
-                      >
-                        <span>Code: {activePodId}</span>
-                        <Copy className="w-3 h-3" />
-                      </button>
-                    </div>
-                    <p className="text-xs text-slate-400 mt-1">
-                      Share code <strong className="text-slate-200">{activePodId}</strong> so friends can join from their own accounts and compare live win rates.
-                    </p>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={handleLeavePod}
-                    className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-rose-500/20 text-slate-300 hover:text-rose-300 border border-slate-700 text-xs font-semibold self-start sm:self-auto"
-                  >
-                    Leave Pod
-                  </button>
-                </div>
-
-                {podLoading ? (
-                  <div className="py-10 text-center text-xs text-slate-400">
-                    Loading live Pod standings...
-                  </div>
-                ) : (
-                  <div className="space-y-2.5">
-                    {Object.values(podData?.members || {})
-                      .sort(
-                        (a, b) =>
-                          (b.winRate || 0) - (a.winRate || 0) ||
-                          (b.totalWins || 0) - (a.totalWins || 0)
-                      )
-                      .map((member, idx) => (
-                        <div
-                          key={member.uid}
-                          className="p-4 rounded-xl bg-slate-950/80 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-                        >
-                          <div className="flex items-center gap-3 min-w-0">
-                            <span
-                              className={`w-7 h-7 rounded-full font-extrabold text-xs flex items-center justify-center shrink-0 ${
-                                idx === 0
-                                  ? 'bg-amber-500 text-slate-950'
-                                  : 'bg-slate-800 text-slate-300'
-                              }`}
-                            >
-                              #{idx + 1}
-                            </span>
-                            <div className="min-w-0">
-                              <div className="text-sm font-bold text-white flex items-center gap-2">
-                                <span className="truncate">{member.name}</span>
-                                {member.uid === user?.uid && (
-                                  <span className="px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold">
-                                    You
-                                  </span>
-                                )}
-                              </div>
-                              <div className="text-xs text-slate-400 truncate">
-                                Signature Commander:{' '}
-                                <span className="text-indigo-300 font-medium">
-                                  {member.signatureCommander || '—'}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-4 text-xs shrink-0">
-                            <div className="text-right">
-                              <div className="text-slate-400">Record</div>
-                              <div className="font-bold text-slate-100">
-                                {member.totalWins}W–{member.totalGames - member.totalWins}L
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <div className="text-slate-400">Win Rate</div>
-                              <div className="font-extrabold text-emerald-400">
-                                {member.winRate}%
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <div className="text-slate-400">Roster</div>
-                              <div className="font-bold text-slate-200">
-                                {member.totalDecks} decks
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                  </div>
-                )}
-              </div>
-            )}
           </section>
         )}
 
@@ -4149,11 +3323,6 @@ export default function App() {
                   icon: FileText
                 },
                 {
-                  id: 'analytics',
-                  label: 'Curve & Game Changers',
-                  icon: PieChart
-                },
-                {
                   id: 'awards',
                   label: 'Card Hall of Fame & Cuts',
                   icon: Star
@@ -4354,17 +3523,6 @@ export default function App() {
                     </div>
                   )}
                 </div>
-              )}
-
-              {/* TAB B2: MANA CURVE, TYPES & GAME CHANGERS (OPTION 3) */}
-              {drawerTab === 'analytics' && (
-                <DeckAnalyticsTab
-                  decklist={selectedDeck.decklist || []}
-                  onPreviewCard={(cardName) => {
-                    setPreviewCardName(cardName);
-                    setDrawerTab('decklist');
-                  }}
-                />
               )}
 
               {/* TAB B: CARD HALL OF FAME & CUT CANDIDATES */}
@@ -4739,18 +3897,18 @@ export default function App() {
       )}
 
       {/* ==================================================================== */}
-      {/* COMMANDER WRAPPED SEASON RECAP MODAL (OPTION 6)                      */}
+      {/* SPIN THE POD MODAL (WEIGHTED DECK RANDOMIZER)                        */}
       {/* ==================================================================== */}
-      {isWrappedModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-md rounded-3xl bg-gradient-to-b from-slate-900 via-slate-900 to-indigo-950 border border-amber-500/40 shadow-2xl overflow-hidden">
-            <div className="px-5 py-4 border-b border-slate-800/80 flex items-center justify-between">
+      {isSpinModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-lg rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl overflow-hidden">
+            <div className="px-5 py-4 border-b border-slate-800 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-amber-400" />
-                <h3 className="text-base font-extrabold text-white">Commander Wrapped</h3>
+                <Dices className="w-5 h-5 text-indigo-400" />
+                <h3 className="text-base font-bold text-white">Spin the Pod — Deck Picker</h3>
               </div>
               <button
-                onClick={() => setIsWrappedModalOpen(false)}
+                onClick={() => setIsSpinModalOpen(false)}
                 className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
               >
                 <X className="w-4 h-4" />
@@ -4758,83 +3916,847 @@ export default function App() {
             </div>
 
             <div className="p-5 space-y-4">
-              <div className="rounded-2xl bg-slate-950/90 border border-amber-500/30 p-5 space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-[10px] font-extrabold uppercase tracking-widest text-amber-400">
-                      Commander Vault Recap
-                    </div>
-                    <h4 className="text-lg font-extrabold text-white mt-0.5">{accountLabel}</h4>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-xl font-extrabold text-emerald-400">
-                      {analytics.overallWinRate}% WR
-                    </div>
-                    <div className="text-[11px] text-slate-400">
-                      {analytics.totalWins}W – {analytics.totalGames - analytics.totalWins}L (
-                      {analytics.totalGames} games)
-                    </div>
-                  </div>
+              {/* Filter Controls */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                    Bracket Pool
+                  </label>
+                  <select
+                    value={spinBracketFilter}
+                    onChange={(e) => {
+                      setSpinBracketFilter(e.target.value);
+                      setSpinResultDeckId(null);
+                    }}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white focus:outline-none focus:border-indigo-500"
+                  >
+                    <option value="all">All Brackets ({decks.length} decks)</option>
+                    {[1, 2, 3, 4, 5].map((b) => (
+                      <option key={b} value={String(b)}>
+                        {COMMANDER_BRACKETS[b].short}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
-                <div className="grid grid-cols-1 gap-2.5 pt-2 border-t border-slate-800/80 text-xs">
-                  <div className="p-3 rounded-xl bg-slate-900/90 border border-slate-800 flex items-center justify-between">
-                    <span className="text-slate-400">🏆 Signature Commander</span>
-                    <span className="font-bold text-white truncate max-w-[190px]">
-                      {analytics.topSignatureCommander?.name || decks[0]?.name || '—'}
-                    </span>
-                  </div>
-                  <div className="p-3 rounded-xl bg-slate-900/90 border border-slate-800 flex items-center justify-between">
-                    <span className="text-slate-400">🔥 Most Played Deck</span>
-                    <span className="font-bold text-indigo-300 truncate max-w-[190px]">
-                      {analytics.mostPlayed
-                        ? `${analytics.mostPlayed.name} (${analytics.mostPlayed.games}g)`
-                        : '—'}
-                    </span>
-                  </div>
-                  <div className="p-3 rounded-xl bg-slate-900/90 border border-slate-800 flex items-center justify-between">
-                    <span className="text-slate-400">⭐ #1 Card of the Match</span>
-                    <span className="font-bold text-amber-300 truncate max-w-[190px]">
-                      {analytics.topGlobalMvp[0]
-                        ? `${analytics.topGlobalMvp[0].name} (${analytics.topGlobalMvp[0].count}×)`
-                        : '—'}
-                    </span>
-                  </div>
-                  <div className="p-3 rounded-xl bg-slate-900/90 border border-slate-800 flex items-center justify-between">
-                    <span className="text-slate-400">🎉 Most Fun Card</span>
-                    <span className="font-bold text-pink-300 truncate max-w-[190px]">
-                      {analytics.topGlobalFun[0]
-                        ? `${analytics.topGlobalFun[0].name} (${analytics.topGlobalFun[0].count}×)`
-                        : '—'}
-                    </span>
-                  </div>
+                <div className="flex items-end">
+                  <label className="w-full flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={spinExcludeToday}
+                      onChange={(e) => {
+                        setSpinExcludeToday(e.target.checked);
+                        setSpinResultDeckId(null);
+                      }}
+                      className="rounded border-slate-600 bg-slate-900 text-indigo-500 focus:ring-indigo-500"
+                    />
+                    <span className="text-xs text-slate-300">Skip decks played today</span>
+                  </label>
                 </div>
               </div>
 
+              {/* Result Display Box */}
+              <div className="rounded-2xl bg-slate-950/90 border border-indigo-500/30 p-5 text-center min-h-[160px] flex flex-col items-center justify-center">
+                {spinCandidateDecks.length === 0 ? (
+                  <p className="text-xs text-amber-300">
+                    No decks match these filters. Try switching Bracket Pool to "All Brackets" or unchecking "Skip decks played today".
+                  </p>
+                ) : spinSelectedDeck ? (
+                  <div className="space-y-2.5 w-full">
+                    <div className="flex items-center justify-center gap-1.5">
+                      {spinSelectedDeck.colors.map((c) => (
+                        <ManaPip key={c} color={c} size="md" />
+                      ))}
+                      <span
+                        className={`ml-1 px-2 py-0.5 rounded text-[10px] font-bold border ${
+                          COMMANDER_BRACKETS[spinSelectedDeck.bracket || 3]?.badge
+                        }`}
+                      >
+                        {COMMANDER_BRACKETS[spinSelectedDeck.bracket || 3]?.short}
+                      </span>
+                    </div>
+
+                    <div className="text-lg sm:text-xl font-extrabold text-white">
+                      {spinSelectedDeck.name}
+                    </div>
+
+                    {spinSelectedDeck.archetype && (
+                      <div className="text-xs text-indigo-300 font-medium">
+                        {spinSelectedDeck.archetype}
+                      </div>
+                    )}
+
+                    <div className="text-[11px] text-slate-400">
+                      Played <strong className="text-white">{spinSelectedDeck.games}</strong>{' '}
+                      {spinSelectedDeck.games === 1 ? 'time' : 'times'} ({spinSelectedDeck.playShare}%
+                      share) • Selection odds: {spinSelectedDeck.oddsPercent}%
+                    </div>
+
+                    {!isSpinning && (
+                      <div className="pt-2 flex items-center justify-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsSpinModalOpen(false);
+                            openDeckDrawer(spinSelectedDeck);
+                          }}
+                          className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold"
+                        >
+                          Inspect Decklist
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsSpinModalOpen(false);
+                            openLogModal(spinSelectedDeck.id, 'win');
+                          }}
+                          className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold"
+                        >
+                          Log Game With This Deck
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    <p className="text-sm font-bold text-slate-200">
+                      {spinCandidateDecks.length} eligible{' '}
+                      {spinCandidateDecks.length === 1 ? 'deck' : 'decks'} in the pool
+                    </p>
+                    <p className="text-xs text-slate-400">
+                      Underplayed decks receive higher odds automatically!
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Odds Breakdown Preview */}
+              {spinCandidateDecks.length > 0 && (
+                <div className="space-y-1.5">
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 flex items-center justify-between">
+                    <span>Weighted Rotation Pool</span>
+                    <span>Selection Odds</span>
+                  </div>
+                  <div className="max-h-32 overflow-y-auto space-y-1 pr-1">
+                    {spinCandidateDecks
+                      .slice()
+                      .sort((a, b) => b.oddsPercent - a.oddsPercent)
+                      .map((d) => (
+                        <div
+                          key={d.id}
+                          className="flex items-center justify-between text-xs px-2.5 py-1.5 rounded-lg bg-slate-950/60 border border-slate-800/70"
+                        >
+                          <span className="text-slate-300 truncate pr-2">
+                            {d.name}{' '}
+                            <span className="text-slate-500 text-[11px]">({d.games}g)</span>
+                          </span>
+                          <span className="font-bold text-indigo-300 shrink-0">
+                            {d.oddsPercent}%
+                          </span>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+
               <button
                 type="button"
-                onClick={async () => {
-                  const summary = [
-                    `🏆 ${accountLabel}'s Commander Wrapped`,
-                    `• Record: ${analytics.totalWins}W–${analytics.totalGames - analytics.totalWins}L (${analytics.overallWinRate}% WR across ${decks.length} decks)`,
-                    `• Signature Commander: ${analytics.topSignatureCommander?.name || decks[0]?.name || 'N/A'}`,
-                    `• Most Played: ${analytics.mostPlayed ? `${analytics.mostPlayed.name} (${analytics.mostPlayed.games} games)` : 'N/A'}`,
-                    `• #1 MVP Card: ${analytics.topGlobalMvp[0]?.name || 'N/A'}`,
-                    `• Most Fun Card: ${analytics.topGlobalFun[0]?.name || 'N/A'}`
-                  ].join('\n');
-                  try {
-                    await navigator.clipboard.writeText(summary);
-                    showToast('Copied Commander Wrapped recap for Discord / WhatsApp!');
-                  } catch {
-                    showToast('Could not copy to clipboard', 'error');
-                  }
-                }}
-                className="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-extrabold text-sm flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20"
+                disabled={spinCandidateDecks.length === 0 || isSpinning}
+                onClick={handleSpinDeck}
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 disabled:opacity-50 text-white font-extrabold text-sm shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2 transition-all active:scale-[0.99]"
               >
-                <Share2 className="w-4 h-4" />
-                <span>Copy Recap for Discord / WhatsApp</span>
+                <Dices className={`w-4 h-4 ${isSpinning ? 'animate-spin' : ''}`} />
+                <span>
+                  {isSpinning
+                    ? 'Rolling the Dice...'
+                    : spinSelectedDeck
+                    ? 'Spin Again'
+                    : 'Roll for Next Deck'}
+                </span>
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==================================================================== */}
+      {/* MODAL 1: DETAILED LOG GAME MODAL (WITH MVP & MOST FUN CARD)          */}
+      {/* ==================================================================== */}
+      {isLogModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-md rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl overflow-hidden max-h-[92vh] overflow-y-auto">
+            <div className="px-5 py-4 border-b border-slate-800 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Trophy className="w-5 h-5 text-amber-400" />
+                <h3 className="text-base font-bold text-white">Log Commander Match</h3>
+              </div>
+              <button
+                onClick={() => setIsLogModalOpen(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleDetailedLogSubmit} className="p-5 space-y-4">
+              {/* Commander Select */}
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                  Commander Played
+                </label>
+                <select
+                  value={logDeckId}
+                  onChange={(e) => setLogDeckId(e.target.value)}
+                  required
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-sm text-white focus:outline-none focus:border-amber-500"
+                >
+                  {decks.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.name} (B{d.bracket || 3} • {d.colors.join('') || 'C'})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Outcome Toggle */}
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                  Match Result
+                </label>
+                <div className="grid grid-cols-2 gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setLogResult('win')}
+                    className={`py-2.5 px-4 rounded-xl font-bold text-sm border flex items-center justify-center gap-2 transition-all ${
+                      logResult === 'win'
+                        ? 'bg-emerald-500/20 border-emerald-400 text-emerald-300 shadow-lg shadow-emerald-500/10'
+                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    <Trophy className="w-4 h-4" />
+                    <span>Victory</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLogResult('loss')}
+                    className={`py-2.5 px-4 rounded-xl font-bold text-sm border flex items-center justify-center gap-2 transition-all ${
+                      logResult === 'loss'
+                        ? 'bg-rose-500/20 border-rose-400 text-rose-300 shadow-lg shadow-rose-500/10'
+                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    <span>Loss</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Card of the Match & Most Fun Card */}
+              <div className="space-y-3 pt-1">
+                <CardNominationInput
+                  label="Card of the Match (Most Influential)"
+                  icon={Star}
+                  iconColor="text-amber-400"
+                  placeholder="Type card name (searches deck & Scryfall)..."
+                  value={logMvpCard}
+                  onChange={setLogMvpCard}
+                  deckCards={decks.find((d) => d.id === logDeckId)?.decklist || []}
+                />
+
+                <CardNominationInput
+                  label="Most Fun Card"
+                  icon={Smile}
+                  iconColor="text-pink-400"
+                  placeholder="Type card name..."
+                  value={logFunCard}
+                  onChange={setLogFunCard}
+                  deckCards={decks.find((d) => d.id === logDeckId)?.decklist || []}
+                />
+              </div>
+
+              {/* Date & Pod Size */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                    Date
+                  </label>
+                  <input
+                    type="date"
+                    value={logDate}
+                    onChange={(e) => setLogDate(e.target.value)}
+                    required
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs sm:text-sm text-white focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                    Pod Size
+                  </label>
+                  <select
+                    value={logPodSize}
+                    onChange={(e) => setLogPodSize(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs sm:text-sm text-white focus:outline-none focus:border-amber-500"
+                  >
+                    <option value={2}>1v1 (2 Players)</option>
+                    <option value={3}>3-Player Pod</option>
+                    <option value={4}>4-Player Pod (Standard)</option>
+                    <option value={5}>5-Player Pod</option>
+                    <option value={6}>6-Player Pod</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Optional Match Notes */}
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                  Match Notes (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={logNotes}
+                  onChange={(e) => setLogNotes(e.target.value)}
+                  placeholder="e.g., Turn 8 combat blowout, close game..."
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
+                />
+              </div>
+
+              <div className="pt-2 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsLogModalOpen(false)}
+                  className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs sm:text-sm font-medium text-slate-300"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs sm:text-sm shadow-lg shadow-amber-500/20"
+                >
+                  Save Match
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ==================================================================== */}
+      {/* MODAL 2: ADD / EDIT COMMANDER DECK (SCRYFALL + PARTNERS + MOXFIELD)  */}
+      {/* ==================================================================== */}
+      {isDeckModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-md rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl overflow-hidden max-h-[92vh] overflow-y-auto">
+            <div className="px-5 py-4 border-b border-slate-800 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Layers className="w-5 h-5 text-amber-400" />
+                <h3 className="text-base font-bold text-white">
+                  {editingDeck ? 'Edit Commander Deck' : 'Add New Commander Deck'}
+                </h3>
+              </div>
+              <button
+                onClick={() => setIsDeckModalOpen(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleDeckSave} className="p-5 space-y-4">
+              {/* Primary Commander with Scryfall Live Search */}
+              <ScryfallCommanderInput
+                label={hasPartner ? 'Primary Commander (Scryfall Search)' : 'Commander Name (Scryfall Search)'}
+                placeholder="Search Scryfall (e.g., Urza, Atraxa, Tymna)..."
+                value={deckName}
+                onChange={setDeckName}
+                onSelectCommander={handleSelectPrimaryCommander}
+                required
+              />
+
+              {/* Partner / Background / Doctor's Companion Toggle */}
+              <div className="space-y-2.5">
+                <label className="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-slate-950/90 border border-slate-800 cursor-pointer select-none hover:border-slate-700 transition-colors">
+                  <div>
+                    <span className="text-xs font-bold text-slate-200 block">
+                      Partner / Background / Companion
+                    </span>
+                    <span className="text-[11px] text-slate-400">
+                      Add a second commander & merge color identities
+                    </span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={hasPartner}
+                    onChange={(e) => handleTogglePartnerMode(e.target.checked)}
+                    className="w-4 h-4 rounded border-slate-600 bg-slate-900 text-amber-500 focus:ring-amber-500"
+                  />
+                </label>
+
+                {hasPartner && (
+                  <ScryfallCommanderInput
+                    label="Partner / Background Commander"
+                    placeholder="Search second commander (e.g., Kraum, Thrasios, Street Urchin)..."
+                    value={partnerName}
+                    onChange={setPartnerName}
+                    onSelectCommander={handleSelectPartnerCommander}
+                    required={hasPartner}
+                  />
+                )}
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                    Color Identity
+                  </label>
+                  <span className="text-xs font-medium text-amber-300">
+                    {getGuildOrShardName(deckColors)}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2.5">
+                  {COLOR_ORDER.map((c) => {
+                    const selected = deckColors.includes(c);
+                    return (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => toggleDeckColor(c)}
+                        className={`flex-1 py-2.5 rounded-xl border flex flex-col items-center gap-1 transition-all ${
+                          selected
+                            ? 'bg-slate-800 border-amber-400 scale-[1.03] shadow-md'
+                            : 'bg-slate-950 border-slate-800 opacity-50 hover:opacity-80'
+                        }`}
+                      >
+                        <ManaPip color={c} size="md" />
+                        <span className="text-[10px] font-semibold text-slate-300">{c}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Commander Bracket & Archetype */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                    Commander Bracket
+                  </label>
+                  <select
+                    value={deckBracket}
+                    onChange={(e) => setDeckBracket(Number(e.target.value))}
+                    className="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs sm:text-sm text-white focus:outline-none focus:border-amber-500"
+                  >
+                    {[1, 2, 3, 4, 5].map((b) => (
+                      <option key={b} value={b}>
+                        {COMMANDER_BRACKETS[b].short}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                    Archetype / Theme
+                  </label>
+                  <input
+                    type="text"
+                    value={deckArchetype}
+                    onChange={(e) => setDeckArchetype(e.target.value)}
+                    placeholder="e.g., Blink, Spellslinger..."
+                    className="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                  Moxfield or Archidekt URL (Auto-Imports Cards)
+                </label>
+                <input
+                  type="text"
+                  value={deckMoxfield}
+                  onChange={(e) => setDeckMoxfield(e.target.value)}
+                  placeholder="https://archidekt.com/decks/... or https://moxfield.com/decks/..."
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
+                />
+              </div>
+
+              {!editingDeck && (
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                      Or Paste Decklist (MTGO / Text Export)
+                    </label>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          const text = await navigator.clipboard.readText();
+                          if (text && parseDecklistText(text).length > 0) {
+                            setInitialDecklistText(text);
+                            showToast(
+                              `Pasted ${parseDecklistText(text).reduce(
+                                (s, c) => s + c.qty,
+                                0
+                              )} cards from clipboard!`
+                            );
+                          } else {
+                            showToast('Copy your decklist on Moxfield or Archidekt first!', 'error');
+                          }
+                        } catch {
+                          showToast('Click inside the box below and press Cmd+V / Ctrl+V');
+                        }
+                      }}
+                      className="text-[11px] font-bold text-indigo-300 hover:text-indigo-200 flex items-center gap-1"
+                    >
+                      <Upload className="w-3 h-3" />
+                      <span>1-Click Paste Clipboard</span>
+                    </button>
+                  </div>
+                  <textarea
+                    rows={4}
+                    value={initialDecklistText}
+                    onChange={(e) => setInitialDecklistText(e.target.value)}
+                    placeholder={`1 Sol Ring\n1 Arcane Signet\n...`}
+                    className="w-full p-3 rounded-xl bg-slate-950 border border-slate-700 font-mono text-xs text-white placeholder-slate-600 focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+              )}
+
+              <div className="pt-2 flex items-center justify-between gap-2">
+                {editingDeck ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsDeckModalOpen(false);
+                      requestDeleteDeck(editingDeck);
+                    }}
+                    className="px-3.5 py-2.5 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 text-xs font-semibold flex items-center gap-1.5"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Delete</span>
+                  </button>
+                ) : (
+                  <div />
+                )}
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsDeckModalOpen(false)}
+                    className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs sm:text-sm font-medium text-slate-300"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSavingDeck}
+                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 disabled:opacity-50 text-slate-950 font-bold text-xs sm:text-sm shadow-lg shadow-amber-500/20 flex items-center gap-1.5"
+                  >
+                    {isSavingDeck && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
+                    <span>
+                      {isSavingDeck
+                        ? 'Importing...'
+                        : editingDeck
+                        ? 'Save Changes'
+                        : 'Add Deck'}
+                    </span>
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ==================================================================== */}
+      {/* MODAL 3: BACKUP, EXPORT & DATA MANAGEMENT                            */}
+      {/* ==================================================================== */}
+      {isBackupModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-md rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl overflow-hidden">
+            <div className="px-5 py-4 border-b border-slate-800 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Download className="w-5 h-5 text-amber-400" />
+                <h3 className="text-base font-bold text-white">Backup & Data Management</h3>
+              </div>
+              <button
+                onClick={() => setIsBackupModalOpen(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4">
+              <p className="text-xs text-slate-400 leading-relaxed">
+                All decks, 100-card lists, changelogs, and match history are tied privately to your account. Download a backup anytime for safekeeping.
+              </p>
+
+              <div className="space-y-2.5">
+                <button
+                  onClick={handleExportJSON}
+                  className="w-full py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-left flex items-center justify-between transition-colors"
+                >
+                  <div>
+                    <div className="text-sm font-bold text-white">Download Full Backup (.JSON)</div>
+                    <div className="text-xs text-slate-400">
+                      Saves all decks, decklists, revisions & match logs
+                    </div>
+                  </div>
+                  <Download className="w-4 h-4 text-amber-400 shrink-0" />
+                </button>
+
+                <button
+                  onClick={handleExportCSV}
+                  className="w-full py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-left flex items-center justify-between transition-colors"
+                >
+                  <div>
+                    <div className="text-sm font-bold text-white">Export Match Spreadsheet (.CSV)</div>
+                    <div className="text-xs text-slate-400">
+                      Includes MVP & Most Fun Card columns for Excel/Sheets
+                    </div>
+                  </div>
+                  <Download className="w-4 h-4 text-emerald-400 shrink-0" />
+                </button>
+
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-left flex items-center justify-between transition-colors"
+                >
+                  <div>
+                    <div className="text-sm font-bold text-white">Import from Backup (.JSON)</div>
+                    <div className="text-xs text-slate-400">
+                      Load a previously saved backup file into your account
+                    </div>
+                  </div>
+                  <Upload className="w-4 h-4 text-indigo-400 shrink-0" />
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".json"
+                  onChange={handleImportJSON}
+                  className="hidden"
+                />
+              </div>
+
+              {/* Vercel Serverless Moxfield Proxy Setup Card */}
+              <div className="p-3.5 rounded-xl bg-indigo-500/10 border border-indigo-500/30 space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="text-xs font-bold text-indigo-200 flex items-center gap-1.5">
+                    <Cloud className="w-3.5 h-3.5 text-indigo-400" />
+                    <span>Vercel Deck Auto-Sync Proxy (Moxfield & Archidekt)</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        await navigator.clipboard.writeText(VERCEL_MOXFIELD_PROXY_CODE);
+                        showToast('Copied api/moxfield.js code to clipboard!');
+                      } catch {
+                        showToast('Could not access clipboard', 'error');
+                      }
+                    }}
+                    className="px-2.5 py-1 rounded-lg bg-indigo-500/25 hover:bg-indigo-500/35 text-indigo-100 text-[11px] font-bold flex items-center gap-1 transition-colors"
+                  >
+                    <Copy className="w-3 h-3" />
+                    <span>Copy api/moxfield.js</span>
+                  </button>
+                </div>
+                <p className="text-[11px] text-slate-300 leading-relaxed">
+                  Paste this into <code className="text-amber-300">api/moxfield.js</code> in your GitHub repo so Vercel fetches both <strong>Archidekt</strong> and <strong>Moxfield</strong> decklists directly on the server without browser CORS blocks.
+                </p>
+              </div>
+
+              <div className="pt-3 border-t border-slate-800 flex items-center justify-end">
+                <button
+                  onClick={() => setIsBackupModalOpen(false)}
+                  className="px-4 py-2 rounded-xl bg-slate-800 text-xs font-semibold text-slate-200"
+                >
+                  Done
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==================================================================== */}
+      {/* MODAL 5: PLAYER ACCOUNT (SIGN IN / CREATE ACCOUNT / PROFILE)         */}
+      {/* ==================================================================== */}
+      {isAccountModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-md rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl overflow-hidden">
+            <div className="px-5 py-4 border-b border-slate-800 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <User className="w-5 h-5 text-amber-400" />
+                <h3 className="text-base font-bold text-white">
+                  {!isGuestAccount
+                    ? 'Player Account'
+                    : authMode === 'signup'
+                    ? 'Create Commander Account'
+                    : 'Sign In to Your Vault'}
+                </h3>
+              </div>
+              <button
+                onClick={() => setIsAccountModalOpen(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {!isGuestAccount ? (
+              <div className="p-5 space-y-4">
+                <div className="p-4 rounded-2xl bg-slate-950/90 border border-emerald-500/30 flex items-center gap-3.5">
+                  <div className="w-11 h-11 rounded-xl bg-emerald-500/15 border border-emerald-500/35 text-emerald-300 flex items-center justify-center font-extrabold text-base shrink-0">
+                    {accountLabel.slice(0, 2).toUpperCase()}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-sm font-bold text-white truncate">{accountLabel}</div>
+                    <div className="text-xs text-slate-400 truncate">{user?.email}</div>
+                    <div className="inline-flex items-center gap-1 text-[11px] text-emerald-400 font-semibold mt-1">
+                      <Cloud className="w-3 h-3" />
+                      <span>
+                        Cloud Sync Active ({decks.length} {decks.length === 1 ? 'deck' : 'decks'} •{' '}
+                        {matches.length} {matches.length === 1 ? 'game' : 'games'})
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Your decks, 100-card lists, revisions, and match history are privately tied to your account. Sign in with this same email and password on any phone or computer to access your vault.
+                </p>
+
+                <div className="pt-2 flex items-center justify-between gap-2">
+                  <button
+                    type="button"
+                    onClick={handleSignOutAndGuest}
+                    className="px-4 py-2.5 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 text-xs font-bold flex items-center gap-1.5"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                    <span>Sign Out</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsAccountModalOpen(false)}
+                    className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200"
+                  >
+                    Done
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="p-5 space-y-4">
+                {/* Sign In / Sign Up Mode Switcher */}
+                <div className="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-slate-950 border border-slate-800">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAuthMode('signin');
+                      setAuthError('');
+                    }}
+                    className={`py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors ${
+                      authMode === 'signin'
+                        ? 'bg-amber-500 text-slate-950'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <LogIn className="w-3.5 h-3.5" />
+                    <span>Sign In</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAuthMode('signup');
+                      setAuthError('');
+                    }}
+                    className={`py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors ${
+                      authMode === 'signup'
+                        ? 'bg-amber-500 text-slate-950'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <UserPlus className="w-3.5 h-3.5" />
+                    <span>Create Account</span>
+                  </button>
+                </div>
+
+                {authError && (
+                  <div className="p-3 rounded-xl bg-rose-500/15 border border-rose-500/35 text-xs text-rose-200 flex items-start gap-2">
+                    <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+                    <span>{authError}</span>
+                  </div>
+                )}
+
+                <form onSubmit={handleAccountSubmit} className="space-y-3.5">
+                  {authMode === 'signup' && (
+                    <div>
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">
+                        Player / Pod Name
+                      </label>
+                      <div className="relative">
+                        <User className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                        <input
+                          type="text"
+                          value={authDisplayName}
+                          onChange={(e) => setAuthDisplayName(e.target.value)}
+                          placeholder="e.g., Jace Beleren"
+                          className="w-full pl-9 pr-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">
+                      Email Address
+                    </label>
+                    <div className="relative">
+                      <Mail className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="email"
+                        required
+                        value={authEmail}
+                        onChange={(e) => setAuthEmail(e.target.value)}
+                        placeholder="planeswalker@example.com"
+                        className="w-full pl-9 pr-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">
+                      Password
+                    </label>
+                    <div className="relative">
+                      <Lock className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="password"
+                        required
+                        minLength={6}
+                        value={authPassword}
+                        onChange={(e) => setAuthPassword(e.target.value)}
+                        placeholder="At least 6 characters"
+                        className="w-full pl-9 pr-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={authSubmitting}
+                    className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 disabled:opacity-50 text-slate-950 font-bold text-sm shadow-lg shadow-amber-500/20 transition-all"
+                  >
+                    {authSubmitting
+                      ? 'Please wait...'
+                      : authMode === 'signup'
+                      ? 'Create Account & Start Vault'
+                      : 'Sign In'}
+                  </button>
+                </form>
+              </div>
+            )}
           </div>
         </div>
       )}
