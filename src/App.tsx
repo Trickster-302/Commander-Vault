@@ -1059,7 +1059,20 @@ export default function App() {
     setCloudLoading(true);
     const decksRef = collection(db, 'artifacts', appId, 'users', user.uid, 'decks');
     const matchesRef = collection(db, 'artifacts', appId, 'users', user.uid, 'matches');
+    const profileRef = doc(db, 'artifacts', appId, 'users', user.uid, 'profile', 'settings');
 
+    const unsubProfile = onSnapshot(
+      profileRef,
+      (snap) => {
+        if (snap.exists() && snap.data()?.activePodId) {
+          setActivePodId(snap.data().activePodId);
+        } else {
+          setActivePodId('');
+        }
+      },
+      () => {}
+    );
+    
     const unsubDecks = onSnapshot(
       decksRef,
       (snapshot) => {
@@ -1090,6 +1103,7 @@ export default function App() {
     );
 
     return () => {
+      unsubProfile();
       unsubDecks();
       unsubMatches();
     };
