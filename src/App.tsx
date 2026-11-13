@@ -65,6 +65,7 @@ import {
   writeBatch
 } from 'firebase/firestore';
 import PlaygroupsTab from './components/PlaygroupsTab';
+import WrappedModal from './components/WrappedModal';
 
 // ============================================================================
 // CLOUD PERSISTENCE & AUTHENTICATION INITIALIZATION
@@ -943,6 +944,7 @@ export default function App() {
   const [isDeckModalOpen, setIsDeckModalOpen] = useState(false);
   const [isBackupModalOpen, setIsBackupModalOpen] = useState(false);
   const [isSpinModalOpen, setIsSpinModalOpen] = useState(false);
+  const [isWrappedModalOpen, setIsWrappedModalOpen] = useState(false);
   const [confirmAction, setConfirmAction] = useState(null);
 
   // "Spin the Pod" Weighted Randomizer State
@@ -2205,6 +2207,22 @@ export default function App() {
                 </button>
 
                 <div className="my-1 border-t border-slate-800" />
+
+                <button
+                  type="button"
+                  disabled={decks.length === 0}
+                  onClick={() => {
+                    setIsBrandMenuOpen(false);
+                    setIsWrappedModalOpen(true);
+                  }}
+                  className="w-full px-4 py-2.5 text-left hover:bg-slate-800 disabled:opacity-40 flex items-center gap-2.5 transition-colors"
+                >
+                  <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+                  <div>
+                    <div className="text-xs font-bold text-white">Commander Wrapped</div>
+                    <div className="text-[11px] text-slate-400">Shareable season recap</div>
+                  </div>
+                </button>
 
                 <button
                   type="button"
@@ -4828,6 +4846,15 @@ export default function App() {
       {/* ==================================================================== */}
       {/* MODAL 4: CUSTOM CONFIRMATION DIALOG                                  */}
       {/* ==================================================================== */}
+      <WrappedModal
+        isOpen={isWrappedModalOpen}
+        onClose={() => setIsWrappedModalOpen(false)}
+        accountLabel={accountLabel}
+        decks={decks}
+        analytics={analytics}
+        showToast={showToast}
+      />
+      
       {confirmAction && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="w-full max-w-sm rounded-2xl bg-slate-900 border border-slate-700 p-5 shadow-2xl space-y-4">
