@@ -42,7 +42,8 @@ import {
   UserPlus,
   Cloud,
   Lock,
-  Mail
+  Mail,
+  PieChart
 } from 'lucide-react';
 import { initializeApp } from 'firebase/app';
 import {
@@ -66,6 +67,7 @@ import {
 } from 'firebase/firestore';
 import PlaygroupsTab from './components/PlaygroupsTab';
 import WrappedModal from './components/WrappedModal';
+import DeckAnalyticsTab from './components/DeckAnalyticsTab';
 
 // ============================================================================
 // CLOUD PERSISTENCE & AUTHENTICATION INITIALIZATION
@@ -3405,6 +3407,11 @@ export default function App() {
                   icon: FileText
                 },
                 {
+                  id: 'analytics',
+                  label: 'Curve & Game Changers',
+                  icon: PieChart
+                },
+                {
                   id: 'awards',
                   label: 'Card Hall of Fame & Cuts',
                   icon: Star
@@ -3607,6 +3614,16 @@ export default function App() {
                 </div>
               )}
 
+              {drawerTab === 'analytics' && (
+                <DeckAnalyticsTab
+                  decklist={selectedDeck.decklist || []}
+                  onPreviewCard={(cardName) => {
+                    setPreviewCardName(cardName);
+                    setDrawerTab('decklist');
+                  }}
+                />
+              )}
+              
               {/* TAB B: CARD HALL OF FAME & CUT CANDIDATES */}
               {drawerTab === 'awards' && (
                 <div className="space-y-5">
