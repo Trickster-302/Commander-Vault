@@ -64,6 +64,7 @@ import {
   collection,
   writeBatch
 } from 'firebase/firestore';
+import PlaygroupsTab from './components/PlaygroupsTab';
 
 // ============================================================================
 // CLOUD PERSISTENCE & AUTHENTICATION INITIALIZATION
@@ -931,6 +932,7 @@ export default function App() {
 
   // Navigation & UI State
   const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard' | 'decks' | 'history'
+  const [activePodId, setActivePodId] = useState('');
   const [sortBy, setSortBy] = useState('least_played');
   const [bracketFilter, setBracketFilter] = useState('all'); // 'all' | '1' | '2' | '3' | '4' | '5'
   const [searchQuery, setSearchQuery] = useState('');
@@ -2258,6 +2260,7 @@ export default function App() {
           {[
             { id: 'dashboard', label: 'Overview & Analytics', icon: BarChart3 },
             { id: 'decks', label: `My Decks (${decks.length})`, icon: Layers },
+            { id: 'pod', label: activePodId ? `Playgroups (${activePodId})` : 'Playgroups', icon: Users },
             { id: 'history', label: `Match History (${matches.length})`, icon: History }
           ].map((tab) => {
             const Icon = tab.icon;
@@ -3154,6 +3157,21 @@ export default function App() {
               </div>
             )}
           </section>
+        )}
+        {activeTab === 'pod' && (
+          <PlaygroupsTab
+            db={db}
+            appId={appId}
+            user={user}
+            accountLabel={accountLabel}
+            decks={decks}
+            analytics={analytics}
+            cloudLoading={cloudLoading}
+            activePodId={activePodId}
+            setActivePodId={setActivePodId}
+            openAccountModal={openAccountModal}
+            showToast={showToast}
+          />
         )}
       </main>
 
