@@ -28,6 +28,7 @@ import {
   FileText,
   Eye,
   ChevronRight,
+  ChevronDown,
   Copy,
   CheckCircle2,
   Dices,
@@ -918,8 +919,9 @@ export default function App() {
   const [decks, setDecks] = useState([]);
   const [matches, setMatches] = useState([]);
 
-  // Account Modal State
+  // Account Modal & Brand Dropdown State
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
+  const [isBrandMenuOpen, setIsBrandMenuOpen] = useState(false);
   const [authMode, setAuthMode] = useState('signup'); // 'signin' | 'signup'
   const [authDisplayName, setAuthDisplayName] = useState('');
   const [authEmail, setAuthEmail] = useState('');
@@ -987,7 +989,19 @@ export default function App() {
   const [isSavingDeck, setIsSavingDeck] = useState(false);
 
   const fileInputRef = useRef(null);
+  const brandMenuRef = useRef(null);
   const hasAutoSyncedRef = useRef(false);
+
+  // Close brand dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (brandMenuRef.current && !brandMenuRef.current.contains(e.target)) {
+        setIsBrandMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Toast helper
   const showToast = (message, type = 'success') => {
@@ -1223,7 +1237,8 @@ export default function App() {
       const nowIso = new Date().toISOString();
 
       let nextRevisions = deck.revisions || [];
-      if (added.length > 0 || removed.length > 0 || existingCards.length === 0) {
+      const hasChanges = added.length > 0 || removed.length > 0 || existingCards.length === 0;
+      if (hasChanges) {
         nextRevisions = [
           {
             id: `rev-${Date.now()}`,
@@ -1245,11 +1260,12 @@ export default function App() {
         ...deck,
         decklist: parsedCards,
         revisions: nextRevisions,
-        lastMoxfieldCheck: nowIso
+        lastMoxfieldCheck: nowIso,
+        updatedAt: hasChanges ? nowIso : deck.updatedAt || deck.createdAt || nowIso
       });
 
       if (!silent) {
-        if (added.length === 0 && removed.length === 0 && existingCards.length > 0) {
+        if (!hasChanges) {
           showToast(`${deck.name} is already up to date with ${siteName}!`);
         } else {
           showToast(
@@ -1508,6 +1524,10 @@ export default function App() {
     });
 
     switch (sortBy) {
+      case 'recently_edited':
+        return [...filtered].sort((a, b) =>
+          (b.updatedAt || b.createdAt || '').localeCompare(a.updatedAt || a.createdAt || '')
+        );
       case 'least_played':
         return [...filtered].sort((a, b) => a.games - b.games || a.name.localeCompare(b.name));
       case 'most_played':
@@ -1724,7 +1744,8 @@ export default function App() {
     await saveDeckToCloud({
       ...deck,
       decklist: parsedCards,
-      revisions: [newRevision, ...(deck.revisions || [])]
+      revisions: [newRevision, ...(deck.revisions || [])],
+      updatedAt: nowIso
     });
 
     setIsEditingList(false);
@@ -1856,6 +1877,7 @@ export default function App() {
           : cleanUrl;
 
       const manualParsedCards = parseDecklistText(initialDecklistText);
+      const nowIso = new Date().toISOString();
 
       if (editingDeck) {
         let nextDecklist = editingDeck.decklist || [];
@@ -1874,7 +1896,7 @@ export default function App() {
               nextRevisions = [
                 {
                   id: `rev-${Date.now()}`,
-                  date: new Date().toISOString().split('T')[0],
+                  date: nowIso.split('T')[0],
                   timestamp: Date.now(),
                   note: `Imported from ${siteLabel} URL`,
                   added,
@@ -1885,7 +1907,7 @@ export default function App() {
               ];
             }
             nextDecklist = imported;
-            lastMoxfieldCheck = new Date().toISOString();
+            lastMoxfieldCheck = nowIso;
             autoSync = true;
             fetchedFromSite = true;
           }
@@ -1903,7 +1925,8 @@ export default function App() {
           decklist: nextDecklist,
           revisions: nextRevisions,
           lastMoxfieldCheck,
-          autoSync
+          autoSync,
+          updatedAt: nowIso
         };
         await saveDeckToCloud(updatedDeck);
 
@@ -1941,7 +1964,7 @@ export default function App() {
             ? [
                 {
                   id: `rev-${Date.now()}`,
-                  date: new Date().toISOString().split('T')[0],
+                  date: nowIso.split('T')[0],
                   timestamp: Date.now(),
                   note: revisionNoteText,
                   added: finalCards,
@@ -1963,8 +1986,9 @@ export default function App() {
           decklist: finalCards,
           revisions: initialRevisions,
           autoSync: Boolean(formattedUrl),
-          lastMoxfieldCheck: fetchedFromSite ? new Date().toISOString() : null,
-          createdAt: new Date().toISOString()
+          lastMoxfieldCheck: fetchedFromSite ? nowIso : null,
+          createdAt: nowIso,
+          updatedAt: nowIso
         };
         await saveDeckToCloud(newDeck);
 
@@ -2127,50 +2151,79 @@ export default function App() {
       {/* ==================================================================== */}
       <header className="sticky top-0 z-30 bg-slate-950/90 backdrop-blur-md border-b border-slate-800/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between gap-3">
-          {/* Brand Identity */}
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500/20 to-indigo-500/20 border border-amber-500/40 flex items-center justify-center shadow-lg shadow-amber-500/10 shrink-0">
-              <Layers className="w-5 h-5 text-amber-400" />
-            </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <h1 className="text-base sm:text-lg font-extrabold tracking-tight text-white truncate">
+          {/* Brand Identity Dropdown (Account & Backup) */}
+          <div ref={brandMenuRef} className="relative min-w-0">
+            <button
+              type="button"
+              onClick={() => setIsBrandMenuOpen((prev) => !prev)}
+              aria-expanded={isBrandMenuOpen}
+              className="flex items-center gap-3 min-w-0 group text-left rounded-xl p-1 -ml-1 hover:bg-slate-900/80 transition-colors"
+            >
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500/20 to-indigo-500/20 border border-amber-500/40 group-hover:border-amber-400 flex items-center justify-center shadow-lg shadow-amber-500/10 shrink-0 transition-colors">
+                <Layers className="w-5 h-5 text-amber-400" />
+              </div>
+              <div className="flex items-center gap-2 min-w-0">
+                <h1 className="text-base sm:text-lg font-extrabold tracking-tight text-white group-hover:text-amber-300 transition-colors truncate">
                   Commander Vault
                 </h1>
+                <ChevronDown
+                  className={`w-4 h-4 text-slate-400 group-hover:text-amber-300 transition-transform shrink-0 ${
+                    isBrandMenuOpen ? 'rotate-180' : ''
+                  }`}
+                />
                 <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-500/15 text-amber-300 border border-amber-500/30">
                   {decks.length} {decks.length === 1 ? 'Deck' : 'Decks'}
                 </span>
               </div>
-              <p className="text-xs text-slate-400 truncate hidden sm:block">
-                Personal EDH Roster, Brackets, Decklists & Match Analytics
-              </p>
-            </div>
+            </button>
+
+            {isBrandMenuOpen && (
+              <div className="absolute left-0 mt-2 w-64 rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl overflow-hidden z-50 py-1.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsBrandMenuOpen(false);
+                    openAccountModal(isGuestAccount ? 'signup' : 'signin');
+                  }}
+                  className="w-full px-4 py-2.5 text-left hover:bg-slate-800 flex items-center gap-2.5 transition-colors"
+                >
+                  {isGuestAccount ? (
+                    <User className="w-4 h-4 text-amber-400 shrink-0" />
+                  ) : (
+                    <Cloud className="w-4 h-4 text-emerald-400 shrink-0" />
+                  )}
+                  <div className="min-w-0">
+                    <div className="text-xs font-bold text-white truncate">
+                      {accountLabel}
+                    </div>
+                    <div className="text-[11px] text-slate-400 truncate">
+                      {isGuestAccount ? 'Sign in or create account' : 'Cloud sync active'}
+                    </div>
+                  </div>
+                </button>
+
+                <div className="my-1 border-t border-slate-800" />
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsBrandMenuOpen(false);
+                    setIsBackupModalOpen(true);
+                  }}
+                  className="w-full px-4 py-2.5 text-left hover:bg-slate-800 flex items-center gap-2.5 transition-colors"
+                >
+                  <Download className="w-4 h-4 text-indigo-400 shrink-0" />
+                  <div>
+                    <div className="text-xs font-bold text-white">Backup & Export</div>
+                    <div className="text-[11px] text-slate-400">JSON, CSV & proxy setup</div>
+                  </div>
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Primary Actions */}
           <div className="flex items-center gap-2 sm:gap-2.5">
-            {/* Account Profile / Sign-In Pill */}
-            <button
-              onClick={() => openAccountModal(isGuestAccount ? 'signup' : 'signin')}
-              title={
-                isGuestAccount
-                  ? 'Create an account or sign in to save your decks across devices'
-                  : `Signed in as ${user?.email || accountLabel}`
-              }
-              className={`px-3 py-2 rounded-xl border transition-all flex items-center gap-1.5 text-xs font-bold ${
-                isGuestAccount
-                  ? 'bg-slate-900 hover:bg-slate-800 text-slate-200 border-amber-500/40'
-                  : 'bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-200 border-emerald-500/40'
-              }`}
-            >
-              {isGuestAccount ? (
-                <User className="w-3.5 h-3.5 text-amber-400" />
-              ) : (
-                <Cloud className="w-3.5 h-3.5 text-emerald-400" />
-              )}
-              <span className="max-w-[110px] truncate">{accountLabel}</span>
-            </button>
-
             <button
               onClick={openSpinModal}
               disabled={decks.length === 0}
@@ -2179,15 +2232,6 @@ export default function App() {
             >
               <Dices className="w-4 h-4 text-indigo-300" />
               <span className="hidden md:inline">Spin the Pod</span>
-            </button>
-
-            <button
-              onClick={() => setIsBackupModalOpen(true)}
-              title="Backup, Export & Data Settings"
-              className="p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700/70 transition-colors flex items-center gap-1.5 text-xs font-medium"
-            >
-              <Download className="w-4 h-4" />
-              <span className="hidden lg:inline">Backup</span>
             </button>
 
             <button
@@ -2733,6 +2777,7 @@ export default function App() {
                 <p className="text-xs text-slate-400">
                   Sorted by{' '}
                   <span className="text-amber-300 font-medium">
+                    {sortBy === 'recently_edited' && 'Recently Edited'}
                     {sortBy === 'least_played' && 'Least Played (Pick your next game!)'}
                     {sortBy === 'most_played' && 'Most Played'}
                     {sortBy === 'win_rate' && 'Highest Win Rate'}
@@ -2790,6 +2835,7 @@ export default function App() {
                     onChange={(e) => setSortBy(e.target.value)}
                     className="pl-8 pr-7 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs font-medium text-slate-200 focus:outline-none focus:border-amber-500/60 cursor-pointer"
                   >
+                    <option value="recently_edited">Sort: Recently Edited</option>
                     <option value="least_played">Sort: Least Played First</option>
                     <option value="most_played">Sort: Most Played First</option>
                     <option value="win_rate">Sort: Highest Win Rate</option>
